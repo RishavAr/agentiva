@@ -2,6 +2,7 @@ version: 1
 default_mode: shadow
 
 rules:
+  # Block external emails
   - name: block_external_email
     tool: send_email
     condition:
@@ -11,7 +12,69 @@ rules:
     action: block
     risk_score: 0.9
 
-  - name: shadow_all_tickets
-    tool: create_ticket
+  # Block destructive database operations
+  - name: block_destructive_sql
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "DROP"
+    action: block
+    risk_score: 0.95
+
+  - name: block_delete_sql
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "DELETE"
+    action: block
+    risk_score: 0.95
+
+  # Block suspicious external APIs
+  - name: block_suspicious_api
+    tool: call_external_api
+    condition:
+      field: arguments.url
+      operator: contains
+      value: "darkweb"
+    action: block
+    risk_score: 0.99
+
+  # Block bulk deletions
+  - name: block_bulk_delete
+    tool: delete_resource
+    condition:
+      field: arguments.resource_id
+      operator: contains
+      value: "bulk"
+    action: block
+    risk_score: 0.9
+
+  # Block large fund transfers
+  - name: block_large_transfer
+    tool: transfer_funds
+    condition:
+      field: arguments.amount
+      operator: contains
+      value: "500000"
+    action: block
+    risk_score: 0.95
+
+  # Shadow all ticket creation
+  - name: shadow_tickets
+    tool: create_jira_ticket
+    action: shadow
+    risk_score: 0.2
+
+  # Shadow Slack messages
+  - name: shadow_slack
+    tool: send_slack_message
     action: shadow
     risk_score: 0.3
+
+  # Shadow customer data reads
+  - name: shadow_customer_data
+    tool: read_customer_data
+    action: shadow
+    risk_score: 0.4
