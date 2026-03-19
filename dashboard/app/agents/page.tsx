@@ -27,7 +27,10 @@ export default function AgentsPage() {
   }
 
   useEffect(() => {
-    void loadAgents();
+    const timer = setTimeout(() => {
+      void loadAgents();
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   async function deactivate(agentId: string) {

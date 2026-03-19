@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgentShield - Preview deployments for AI agents</title>
+    <meta
+      name="description"
+      content="See what your AI agent would do before it does it. Shadow mode, simulation, approval workflows, negotiation, and rollback."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #06080d;
+        --panel: #0d1117;
+        --panel-soft: #0f1522;
+        --border: #1d2635;
+        --text: #e6edf7;
+        --muted: #93a2bd;
+        --accent: #3b82f6;
+        --accent-soft: rgba(59, 130, 246, 0.2);
+        --danger: #ef4444;
+        --warning: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Outfit", system-ui, -apple-system, sans-serif;
+        scroll-behavior: smooth;
+      }
+
+      .container {
+        width: min(1120px, 92vw);
+        margin: 0 auto;
+      }
+
+      section {
+        padding: 84px 0;
+      }
+
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        background: radial-gradient(1200px 500px at 10% -10%, rgba(59, 130, 246, 0.25), transparent),
+          radial-gradient(900px 400px at 100% 0%, rgba(59, 130, 246, 0.16), transparent);
+      }
+
+      .eyebrow {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        font-size: 12px;
+        color: #9db5da;
+      }
+
+      h1 {
+        margin: 18px 0 10px;
+        font-size: clamp(40px, 7vw, 78px);
+        line-height: 0.95;
+      }
+
+      .tagline {
+        margin: 0;
+        font-size: clamp(20px, 2.8vw, 34px);
+        color: #c6d7f3;
+      }
+
+      .subtitle {
+        margin-top: 16px;
+        color: var(--muted);
+        max-width: 780px;
+        font-size: clamp(16px, 2vw, 20px);
+        line-height: 1.6;
+      }
+
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 28px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 12px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: 600;
+        border: 1px solid var(--border);
+        transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        color: #fff;
+        background: var(--accent);
+        border-color: #2967cc;
+      }
+
+      .btn-secondary {
+        color: var(--text);
+        background: var(--panel);
+      }
+
+      .terminal {
+        margin-top: 26px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+
+      .terminal-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #2f3c52;
+      }
+
+      .dot:first-child {
+        background: #ef4444;
+      }
+
+      .dot:nth-child(2) {
+        background: #f59e0b;
+      }
+
+      .dot:nth-child(3) {
+        background: #22c55e;
+      }
+
+      .terminal pre {
+        margin: 0;
+        padding: 16px;
+        color: #b9cbeb;
+        font: 500 14px/1.6 "JetBrains Mono", monospace;
+        overflow-x: auto;
+      }
+
+      .grid-3 {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+      }
+
+      .stat {
+        font-size: clamp(34px, 4.4vw, 52px);
+        font-weight: 800;
+        color: #7cb1ff;
+      }
+
+      h2 {
+        margin: 0 0 20px;
+        font-size: clamp(30px, 4vw, 46px);
+      }
+
+      .incident {
+        background: var(--panel-soft);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        color: #ccdaef;
+      }
+
+      .code-block {
+        background: #0b1019;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+      }
+
+      .code-block pre {
+        margin: 0;
+        color: #c2d6f8;
+        font: 500 15px/1.7 "JetBrains Mono", monospace;
+      }
+
+      .flow {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: var(--panel-soft);
+        font: 500 13px/1.8 "JetBrains Mono", monospace;
+        color: #a8c1eb;
+      }
+
+      .modes {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .mode-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+      }
+
+      .mode-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 9px;
+        background: var(--accent-soft);
+        color: #8ab6ff;
+        font: 700 14px/30px "JetBrains Mono", monospace;
+        text-align: center;
+      }
+
+      .mock {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--panel);
+        padding: 18px;
+      }
+
+      .demo-output {
+        margin-top: 10px;
+        background: #0a0f18;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        padding: 12px;
+        font: 500 12px/1.6 "JetBrains Mono", monospace;
+        color: #bbceed;
+        white-space: pre-wrap;
+      }
+
+      .chip-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(0, 1fr));
+        gap: 10px;
+      }
+
+      .chip {
+        text-align: center;
+        border: 1px solid var(--border);
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 12px 8px;
+        color: #cbdaf2;
+        font-size: 13px;
+      }
+
+      .trust-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .trust {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 24px 0 40px;
+      }
+
+      footer .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      footer a {
+        color: #9fbae2;
+        text-decoration: none;
+      }
+
+      .fade {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.5s ease, transform 0.5s ease;
+      }
+
+      .fade.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      @media (max-width: 980px) {
+        .grid-3,
+        .modes,
+        .trust-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .chip-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <div class="container fade">
+        <span class="eyebrow">Open-source AI Agent Safety Runtime</span>
+        <h1>AgentShield</h1>
+        <p class="tagline">Preview deployments for AI agents</p>
+        <p class="subtitle">
+          See what your AI agent would do before it does it. Shadow mode. Simulation. Approval.
+          Rollback. Open-source.
+        </p>
+        <div class="row">
+          <a class="btn btn-primary" href="#get-started">Get Started — pip install agentshield</a>
+          <a class="btn btn-secondary" href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+        </div>
+        <div class="terminal">
+          <div class="terminal-top">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          </div>
+          <pre id="typed-code"></pre>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container fade">
+        <h2>AI agents are breaking things in production</h2>
+        <div class="grid-3">
+          <div class="card"><div class="stat">88%</div><div>of companies had AI agent security incidents</div></div>
+          <div class="card"><div class="stat">48%</div><div>of security pros rank agentic AI as #1 attack vector</div></div>
+          <div class="card"><div class="stat">$1M+</div><div>average cost of AI agent failures (EY 2026)</div></div>
+        </div>
+        <div class="grid-3" style="margin-top:14px;">
+          <div class="incident">Amazon Kiro outage: AI agent deleted + recreated AWS environment.</div>
+          <div class="incident">Microsoft Copilot: zero-click exfiltration from hidden prompts.</div>
+          <div class="incident">Replit Agent: deletion of 1,206 customer records.</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container fade">
+        <h2>Four lines to protect any agent</h2>
+        <div class="code-block">
+<pre>from agentshield import AgentShield
+shield = AgentShield(mode="shadow")
+tools = shield.protect([your_tools])
+print(shield.get_audit_log())</pre>
+        </div>
+        <div class="flow">Agent → AgentShield → Policy Check → Decision (Allow / Shadow / Block / Approve) → Action or Log</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container fade">
+        <h2>Five operating modes</h2>
+        <div class="modes">
+          <div class="mode-card"><div class="mode-icon">EYE</div><h3>Shadow Mode</h3><p>Observe without executing</p></div>
+          <div class="mode-card"><div class="mode-icon">SIM</div><h3>Simulation</h3><p>Preview impact before acting</p></div>
+          <div class="mode-card"><div class="mode-icon">HITL</div><h3>Approval</h3><p>Human-in-the-loop for risky actions</p></div>
+          <div class="mode-card"><div class="mode-icon">CHAT</div><h3>Negotiation</h3><p>Agent gets feedback to self-correct</p></div>
+          <div class="mode-card"><div class="mode-icon">UNDO</div><h3>Rollback</h3><p>Undo what the agent did</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container fade">
+        <h2>Watch AgentShield in action</h2>
+        <div class="mock">
+          <div style="font-size:14px;color:#9ab5dd;">Live demo output (12 scenarios)</div>
+          <div class="demo-output">[1/12] internal update -> SHADOW
+[2/12] external confidential email -> BLOCKED
+[3/12] #general post -> SHADOW
+[4/12] jira ticket -> SHADOW
+[5/12] destructive SQL -> BLOCKED
+[6/12] customer PII read -> SHADOW
+[7/12] suspicious external API -> BLOCKED
+[8/12] bulk delete resource -> BLOCKED
+[9/12] large fund transfer -> BLOCKED
+[10/12] security ticket -> SHADOW
+[11/12] credential reset email -> SHADOW
+[12/12] private deployment update -> SHADOW
+
+Summary: 5 BLOCKED, 7 SHADOWED</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container fade">
+        <h2>Works with every agent framework</h2>
+        <div class="chip-grid">
+          <div class="chip">LangChain</div>
+          <div class="chip">CrewAI</div>
+          <div class="chip">OpenAI</div>
+          <div class="chip">MCP</div>
+          <div class="chip">AutoGen</div>
+          <div class="chip">MetaGPT</div>
+          <div class="chip">Anthropic</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="get-started">
+      <div class="container fade">
+        <h2>Built for production trust</h2>
+        <div class="trust-grid">
+          <div class="trust"><strong>24,000+ tests</strong><div>Massive parameterized safety coverage</div></div>
+          <div class="trust"><strong>64+ attack vectors</strong><div>Real-world incidents + adversarial patterns</div></div>
+          <div class="trust"><strong>Compliance exports</strong><div>SOC2 / GDPR / EU AI Act ready evidence</div></div>
+          <div class="trust"><strong>Open-source</strong><div>Apache 2.0 with transparent policy logic</div></div>
+        </div>
+        <div class="row">
+          <a class="btn btn-primary" href="https://pypi.org/project/agentshield/" target="_blank" rel="noopener noreferrer">pip install agentshield</a>
+          <a class="btn btn-secondary" href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <div class="links">
+          <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">GitHub</a>
+          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a>
+          <span style="font-family:'JetBrains Mono', monospace;color:#8fb8ff;">pip install agentshield</span>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      const code = `from agentshield import AgentShield
+shield = AgentShield(mode="shadow")
+tools = shield.protect([your_tools])
+print(shield.get_audit_log())`;
+      const el = document.getElementById("typed-code");
+      let i = 0;
+      const timer = setInterval(() => {
+        i += 1;
+        el.textContent = code.slice(0, i);
+        if (i >= code.length) clearInterval(timer);
+      }, 18);
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("show");
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      document.querySelectorAll(".fade").forEach((node) => observer.observe(node));
+    </script>
+  </body>
+</html>

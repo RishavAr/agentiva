@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Activity, ClipboardList, Eye, ShieldCheck, Users } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Overview", icon: ShieldCheck },
+  { href: "/dashboard", label: "Overview", icon: ShieldCheck },
   { href: "/live", label: "Live Feed", icon: Activity },
   { href: "/audit", label: "Audit Log", icon: ClipboardList },
   { href: "/agents", label: "Agents", icon: Users },

@@ -1,0 +1,6 @@
+{
+  "name": "agentshield-website",
+  "scripts": {
+    "dev": "npx serve ."
+  }
+}
