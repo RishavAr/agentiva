@@ -76,11 +76,23 @@ class AgentShield:
         return [item.to_dict() for item in self.audit_log]
 
     def get_shadow_report(self) -> Dict[str, Any]:
-        actions = self.get_audit_log()
+        actions = self.audit_log
+        by_tool: Dict[str, int] = {}
+        by_decision: Dict[str, int] = {}
+        risk_total = 0.0
+
+        for action in actions:
+            by_tool[action.tool_name] = by_tool.get(action.tool_name, 0) + 1
+            by_decision[action.decision] = by_decision.get(action.decision, 0) + 1
+            risk_total += action.risk_score
+
+        total_actions = len(actions)
+        avg_risk_score = (risk_total / total_actions) if total_actions else 0.0
         return {
-            "mode": self.mode,
-            "total_actions": len(actions),
-            "actions": actions,
+            "total_actions": total_actions,
+            "by_tool": by_tool,
+            "by_decision": by_decision,
+            "avg_risk_score": round(avg_risk_score, 4),
         }
 
     def save_audit_log(self, output_path: str) -> None:

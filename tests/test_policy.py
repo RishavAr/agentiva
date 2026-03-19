@@ -3,7 +3,7 @@ import asyncio
 from agentshield import AgentShield
 
 
-async def test_policy() -> None:
+async def _run_policy_test() -> None:
     shield = AgentShield(mode="shadow", policy_path="policies/default.yaml")
 
     a1 = await shield.intercept(
@@ -25,5 +25,9 @@ async def test_policy() -> None:
     print("test_policy passed!")
 
 
+def test_policy() -> None:
+    asyncio.run(_run_policy_test())
+
+
 if __name__ == "__main__":
-    asyncio.run(test_policy())
+    asyncio.run(_run_policy_test())
