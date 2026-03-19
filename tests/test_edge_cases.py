@@ -24,6 +24,7 @@ def api_client() -> TestClient:
         if server._shield is not None:
             server._shield.audit_log.clear()
             server._shield.mode = "shadow"
+        server._request_counts_by_agent.clear()
         yield client
 
 

@@ -5,6 +5,11 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
+from agentshield.modes.rollback import RollbackEngine
+from agentshield.modes.simulator import ActionSimulator
+from agentshield.modes.negotiator import AgentNegotiator, NegotiationResponse
+from agentshield.policy.smart_scorer import SmartRiskScorer
+
 
 @dataclass
 class InterceptedAction:
@@ -31,10 +36,14 @@ class AgentShield:
         self.audit_log: List[InterceptedAction] = []
         self.policy_path = policy_path
         self._policy_engine = None
+        self._simulator = ActionSimulator()
+        self.rollback_engine = RollbackEngine()
+        self._smart_scorer = SmartRiskScorer()
         if policy_path:
             from agentshield.policy.engine import PolicyEngine
 
             self._policy_engine = PolicyEngine(policy_path)
+        self.negotiator = AgentNegotiator(self._policy_engine, risk_scorer=self._smart_scorer)
 
     async def intercept(
         self, tool_name: str, arguments: dict, agent_id: str = "default"
@@ -47,17 +56,52 @@ class AgentShield:
             agent_id=agent_id,
             mode=self.mode,
         )
+        simulation = self._simulator.simulate(
+            action_id=action.id,
+            tool_name=action.tool_name,
+            arguments=action.arguments,
+        )
+        rollback_plan = self.rollback_engine.capture_state(
+            action_id=action.id,
+            tool_name=action.tool_name,
+            original_state=action.arguments.get("original_state", {}),
+            reversible=simulation.reversible,
+        )
+        policy_result = None
 
         if self._policy_engine:
             policy_result = await self._policy_engine.evaluate(action)
             action.decision = policy_result.decision
             action.risk_score = policy_result.risk_score
+            action.result = {
+                "policy_rule": policy_result.matched_rule,
+            }
         else:
             self._score_risk(action)
             self._decide(action)
         self._prepare_preview(action)
+        action.result = {
+            **(action.result or {}),
+            "simulation": asdict(simulation),
+        }
+        action.rollback_plan = rollback_plan.to_dict()
         self.audit_log.append(action)
         return action
+
+    async def intercept_with_negotiation(
+        self, tool_name: str, arguments: dict, agent_id: str = "default"
+    ) -> tuple[InterceptedAction, Optional[NegotiationResponse]]:
+        """Intercept + if blocked, automatically return negotiation guidance."""
+        action = await self.intercept(tool_name, arguments, agent_id)
+        if action.decision in ("block", "shadow"):
+            negotiation = await self.negotiator.negotiate(action, None)
+            return action, negotiation
+        return action, None
+
+    def intercept_with_negotiation_sync(
+        self, tool_name: str, arguments: dict, agent_id: str = "default"
+    ) -> tuple[InterceptedAction, Optional[NegotiationResponse]]:
+        return asyncio.run(self.intercept_with_negotiation(tool_name, arguments, agent_id=agent_id))
 
     def intercept_sync(
         self, tool_name: str, arguments: dict, agent_id: str = "default"
@@ -100,22 +144,12 @@ class AgentShield:
             json.dump(self.get_audit_log(), handle, indent=2)
 
     def _score_risk(self, action: InterceptedAction) -> None:
-        """Basic heuristic until policy engine scoring is wired in."""
-        if self._policy_engine and hasattr(self._policy_engine, "score"):
-            action.risk_score = float(
-                self._policy_engine.score(
-                    tool_name=action.tool_name,
-                    arguments=action.arguments,
-                    agent_id=action.agent_id,
-                )
-            )
-            return
-
-        risky_keywords = {"delete", "drop", "remove", "revoke", "terminate", "write"}
-        if any(keyword in action.tool_name.lower() for keyword in risky_keywords):
-            action.risk_score = 0.8
-        else:
-            action.risk_score = 0.2
+        assessment = self._smart_scorer.score_action(
+            tool_name=action.tool_name,
+            arguments=action.arguments,
+            agent_id=action.agent_id,
+        )
+        action.risk_score = assessment.score
 
     def _decide(self, action: InterceptedAction) -> None:
         if self.mode == "shadow":
