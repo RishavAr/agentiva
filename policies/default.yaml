@@ -1,0 +1,17 @@
+version: 1
+default_mode: shadow
+
+rules:
+  - name: block_external_email
+    tool: send_email
+    condition:
+      field: arguments.to
+      operator: not_contains
+      value: "@yourcompany.com"
+    action: block
+    risk_score: 0.9
+
+  - name: shadow_all_tickets
+    tool: create_ticket
+    action: shadow
+    risk_score: 0.3

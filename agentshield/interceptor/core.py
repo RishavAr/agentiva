@@ -48,8 +48,13 @@ class AgentShield:
             mode=self.mode,
         )
 
-        self._score_risk(action)
-        self._decide(action)
+        if self._policy_engine:
+            policy_result = await self._policy_engine.evaluate(action)
+            action.decision = policy_result.decision
+            action.risk_score = policy_result.risk_score
+        else:
+            self._score_risk(action)
+            self._decide(action)
         self._prepare_preview(action)
         self.audit_log.append(action)
         return action
