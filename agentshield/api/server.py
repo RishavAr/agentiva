@@ -51,6 +51,9 @@ class InterceptRequest(BaseModel):
     agent_id: str = Field(
         default="default", max_length=128, description="Identifier for the agent"
     )
+    context: Dict[str, Any] | None = Field(
+        default=None, description="Optional context about who/what is requesting the action"
+    )
 
     @field_validator("tool_name")
     @classmethod
@@ -79,6 +82,7 @@ class AuditEntry(BaseModel):
     decision: str
     risk_score: float
     mode: str
+    mandatory: bool = False
     timestamp: str
 
 
@@ -307,6 +311,7 @@ async def intercept_action(request: InterceptRequest) -> InterceptResponse:
             tool_name=request.tool_name,
             arguments=request.arguments,
             agent_id=request.agent_id,
+            context=request.context,
         )
         await log_action(
             {
@@ -404,6 +409,7 @@ class RegisterAgentRequest(BaseModel):
     owner: str
     allowed_tools: List[str] = Field(default_factory=list)
     max_risk_tolerance: float = 0.8
+    role: str | None = None
 
 
 @app.post("/api/v1/agents")
@@ -414,6 +420,7 @@ async def register_agent(payload: RegisterAgentRequest) -> Dict[str, Any]:
         payload.owner,
         payload.allowed_tools,
         payload.max_risk_tolerance,
+        role=payload.role,
     )
     return agent.to_dict()
 
@@ -452,6 +459,14 @@ async def chat_with_shield(payload: ChatMessageRequest) -> Dict[str, Any]:
     else:
         chat = ShieldChat(shield)
     resp = await chat.ask(payload.message.strip())
+    # If the chat computed an auto-policy update, apply it server-side.
+    try:
+        if isinstance(getattr(resp, "data", None), dict) and resp.data.get("apply_now"):
+            policy_yaml = resp.data.get("policy_yaml") or ""
+            if policy_yaml:
+                await update_policy(PolicyUpdateRequest(policy_yaml=policy_yaml))
+    except Exception as exc:
+        logger.exception("policy_update_from_chat_failed exc=%s", exc)
     return chat_response_to_dict(resp)
 
 
@@ -623,6 +638,7 @@ async def get_audit_log(
             decision=a.decision,
             risk_score=a.risk_score,
             mode=a.mode,
+            mandatory=bool((a.result or {}).get("mandatory")),
             timestamp=a.timestamp,
         )
         for a in paged
@@ -673,6 +689,12 @@ async def update_policy(payload: PolicyUpdateRequest) -> Dict[str, str]:
     with open(policy_path, "w", encoding="utf-8") as handle:
         handle.write(policy_yaml)
     await add_policy_history(policy_yaml=policy_yaml, applied_by="api")
+    # Ensure in-memory policy engine reflects the new policy immediately.
+    try:
+        shield = get_shield()
+        shield.reload_policy(policy_path)
+    except Exception:
+        logger.exception("reload_policy_failed")
     return {"status": "ok", "policy_path": policy_path}
 
 

@@ -11,6 +11,7 @@ from agentshield.modes.rollback import RollbackEngine
 from agentshield.modes.simulator import ActionSimulator
 from agentshield.modes.negotiator import AgentNegotiator, NegotiationResponse
 from agentshield.policy.smart_scorer import SmartRiskScorer
+from agentshield.policy.behavior_tracker import BehaviorTracker
 from agentshield.registry.agent_registry import AgentRegistry
 
 
@@ -28,6 +29,7 @@ class InterceptedAction:
     mode: str = "shadow"
     result: Optional[Dict[str, Any]] = None
     rollback_plan: Optional[Dict[str, Any]] = None
+    context: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -45,23 +47,67 @@ class AgentShield:
         self._simulator = ActionSimulator()
         self.rollback_engine = RollbackEngine()
         self._smart_scorer = SmartRiskScorer()
+        self._behavior_tracker = BehaviorTracker()
         self.agent_registry = AgentRegistry()
         if policy_path:
             from agentshield.policy.engine import PolicyEngine
 
             self._policy_engine = PolicyEngine(policy_path)
+            self._behavior_tracker.configure_baselines(getattr(self._policy_engine, "baselines", {}) or {})
+            self._smart_scorer.configure_policy_context(whitelists=getattr(self._policy_engine, "whitelists", {}) or {})
+        self.negotiator = AgentNegotiator(self._policy_engine, risk_scorer=self._smart_scorer)
+
+    def _resolve_agent_role(self, agent_id: str) -> Optional[str]:
+        try:
+            agent = self.agent_registry.get_agent(agent_id)
+            if getattr(agent, "role", None):
+                return agent.role
+        except Exception:
+            pass
+        # Fallback: if policy engine defines roles, match by agent_id.
+        engine = self._policy_engine
+        roles = getattr(engine, "roles", None) if engine else None
+        if isinstance(roles, dict) and agent_id in roles:
+            return agent_id
+        return None
+
+    def reload_policy(self, policy_path: str | None = None) -> None:
+        """Reload policy YAML into the active in-memory policy engine."""
+        path = policy_path or self.policy_path
+        if not path:
+            self._policy_engine = None
+            return
+        from agentshield.policy.engine import PolicyEngine
+        self.policy_path = path
+        self._policy_engine = PolicyEngine(path)
+        self._behavior_tracker.configure_baselines(getattr(self._policy_engine, "baselines", {}) or {})
+        self._smart_scorer.configure_policy_context(
+            whitelists=getattr(self._policy_engine, "whitelists", {}) or {}
+        )
         self.negotiator = AgentNegotiator(self._policy_engine, risk_scorer=self._smart_scorer)
 
     async def _intercept_impl(
-        self, tool_name: str, arguments: dict, agent_id: str = "default"
+        self,
+        tool_name: str,
+        arguments: dict,
+        agent_id: str = "default",
+        context: Optional[Dict[str, Any]] = None,
+        timestamp: Optional[str | datetime] = None,
     ) -> InterceptedAction:
+        ts = timestamp
+        if ts is None:
+            ts = datetime.now(timezone.utc).isoformat()
+        elif isinstance(ts, datetime):
+            ts = ts.astimezone(timezone.utc).isoformat()
+
         action = InterceptedAction(
             id=str(uuid.uuid4()),
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=ts,
             tool_name=tool_name,
             arguments=arguments or {},
             agent_id=agent_id,
             mode=self.mode,
+            context=context or {},
         )
         simulation = self._simulator.simulate(
             action_id=action.id,
@@ -79,14 +125,19 @@ class AgentShield:
         if self._policy_engine:
             policy_result = await self._policy_engine.evaluate(action)
             action.decision = policy_result.decision
+            # Start from the policy score, then refine using contextual risk signals.
             action.risk_score = policy_result.risk_score
             action.result = {
                 "policy_rule": policy_result.matched_rule,
+                **(policy_result.metadata or {}),
             }
         else:
             self._score_risk(action)
             self._decide(action)
         self._prepare_preview(action)
+        if self._policy_engine:
+            # Even when policy is active, keep risk contextual.
+            self._score_risk(action, override_decision=False)
         action.result = {
             **(action.result or {}),
             "simulation": asdict(simulation),
@@ -96,31 +147,75 @@ class AgentShield:
         return action
 
     def intercept(
-        self, tool_name: str, arguments: Optional[dict] = None, agent_id: str = "default"
+        self,
+        tool_name: str,
+        arguments: Optional[dict] = None,
+        agent_id: str = "default",
+        context: Optional[Dict[str, Any]] = None,
+        timestamp: Optional[str | datetime] = None,
     ):
         if arguments is None:
             return self.intercept_custom(tool_name)
-        return self._intercept_impl(tool_name=tool_name, arguments=arguments, agent_id=agent_id)
+        return self._intercept_impl(
+            tool_name=tool_name,
+            arguments=arguments,
+            agent_id=agent_id,
+            context=context,
+            timestamp=timestamp,
+        )
 
     async def intercept_with_negotiation(
-        self, tool_name: str, arguments: dict, agent_id: str = "default"
+        self,
+        tool_name: str,
+        arguments: dict,
+        agent_id: str = "default",
+        context: Optional[Dict[str, Any]] = None,
+        timestamp: Optional[str | datetime] = None,
     ) -> tuple[InterceptedAction, Optional[NegotiationResponse]]:
         """Intercept + if blocked, automatically return negotiation guidance."""
-        action = await self._intercept_impl(tool_name, arguments, agent_id)
+        action = await self._intercept_impl(
+            tool_name, arguments, agent_id, context=context, timestamp=timestamp
+        )
         if action.decision in ("block", "shadow"):
             negotiation = await self.negotiator.negotiate(action, None)
             return action, negotiation
         return action, None
 
     def intercept_with_negotiation_sync(
-        self, tool_name: str, arguments: dict, agent_id: str = "default"
+        self,
+        tool_name: str,
+        arguments: dict,
+        agent_id: str = "default",
+        context: Optional[Dict[str, Any]] = None,
+        timestamp: Optional[str | datetime] = None,
     ) -> tuple[InterceptedAction, Optional[NegotiationResponse]]:
-        return asyncio.run(self.intercept_with_negotiation(tool_name, arguments, agent_id=agent_id))
+        return asyncio.run(
+            self.intercept_with_negotiation(
+                tool_name,
+                arguments,
+                agent_id=agent_id,
+                context=context,
+                timestamp=timestamp,
+            )
+        )
 
     def intercept_sync(
-        self, tool_name: str, arguments: dict, agent_id: str = "default"
+        self,
+        tool_name: str,
+        arguments: dict,
+        agent_id: str = "default",
+        context: Optional[Dict[str, Any]] = None,
+        timestamp: Optional[str | datetime] = None,
     ) -> InterceptedAction:
-        return asyncio.run(self._intercept_impl(tool_name, arguments, agent_id=agent_id))
+        return asyncio.run(
+            self._intercept_impl(
+                tool_name,
+                arguments,
+                agent_id=agent_id,
+                context=context,
+                timestamp=timestamp,
+            )
+        )
 
     def protect(self, tools: List[Any]) -> List[Any]:
         try:
@@ -188,13 +283,51 @@ class AgentShield:
         with open(output_path, "w", encoding="utf-8") as handle:
             json.dump(self.get_audit_log(), handle, indent=2)
 
-    def _score_risk(self, action: InterceptedAction) -> None:
+    def _score_risk(self, action: InterceptedAction, *, override_decision: bool = True) -> None:
+        agent_role = self._resolve_agent_role(action.agent_id)
+        parsed_ts = None
+        try:
+            parsed_ts = datetime.fromisoformat(action.timestamp.replace("Z", "+00:00"))
+        except Exception:
+            parsed_ts = None
+
         assessment = self._smart_scorer.score_action(
             tool_name=action.tool_name,
             arguments=action.arguments,
             agent_id=action.agent_id,
+            context=getattr(action, "context", None) or {},
+            agent_role=agent_role,
+            timestamp=parsed_ts,
         )
-        action.risk_score = assessment.score
+
+        drift = self._behavior_tracker.analyze_and_record(
+            agent_id=action.agent_id,
+            agent_role=agent_role,
+            tool_name=action.tool_name,
+            arguments=action.arguments,
+            risk_score=assessment.score,
+            timestamp=action.timestamp,
+        )
+
+        final_score = max(0.0, min(1.0, round(assessment.score + drift.total_delta, 4)))
+        # Attach behavioral/baseline signals for the chat co-pilot.
+        if isinstance(action.result, dict):
+            action.result.update(
+                {
+                    "baseline_delta": drift.baseline_delta,
+                    "drift_delta": drift.drift_delta,
+                    "risk_trend_alert": drift.risk_trend_alert,
+                    "data_volume_alert": drift.data_volume_alert,
+                    "new_tool_alert": drift.new_tool_alert,
+                    "enumeration_alert": drift.enumeration_alert,
+                }
+            )
+        # If policy set a decision, do not override it here; only refine risk.
+        if override_decision:
+            action.risk_score = final_score
+            # Decision is set by policy engine or _decide; keep it unchanged unless no policy engine.
+            return
+        action.risk_score = final_score
 
     def _decide(self, action: InterceptedAction) -> None:
         if self.mode == "shadow":
@@ -213,7 +346,12 @@ class AgentShield:
         action.decision = "pending"
 
     def _prepare_preview(self, action: InterceptedAction) -> None:
+        # Preserve any policy evaluation details already stored in `action.result`
+        # (e.g., `policy_rule`) so the chat co-pilot and negotiation layer
+        # can reference them later.
+        existing = action.result or {}
         action.result = {
+            **existing,
             "status": action.decision,
             "message": f"{action.mode} preview for {action.tool_name}",
         }

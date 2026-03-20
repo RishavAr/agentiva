@@ -41,10 +41,11 @@ def test_chat_endpoint() -> None:
         assert response.status_code == 200
         body = response.json()
         assert "answer" in body
-        assert "data" in body
-        assert "follow_up_suggestions" in body
-        assert isinstance(body["follow_up_suggestions"], list)
-        assert body.get("mode") == "basic"
+        assert "suggestions" in body
+        assert isinstance(body["suggestions"], list)
+        assert "hint" not in body
+        assert "data" not in body
+        assert "mode" not in body
 
 
 def test_chat_capabilities_endpoint() -> None:

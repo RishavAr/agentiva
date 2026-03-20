@@ -10,6 +10,7 @@ type AuditEntry = {
   decision: string;
   risk_score: number;
   mode: string;
+  mandatory?: boolean;
   timestamp: string;
 };
 
@@ -75,6 +76,10 @@ export default function DashboardOverviewPage() {
   }
 
   const decisions = report?.by_decision ?? {};
+  const blockRate = report?.total_actions
+    ? (decisions.block ?? 0) / report.total_actions
+    : 0;
+  const showTuningBanner = !loading && report && blockRate > 0.4;
 
   return (
     <div className="space-y-8">
@@ -92,6 +97,25 @@ export default function DashboardOverviewPage() {
       </header>
 
       {error && <div className="rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-red-300">{error}</div>}
+
+      {showTuningBanner && (
+        <button
+          type="button"
+          onClick={() =>
+            window.dispatchEvent(
+              new CustomEvent("agentshield:openChat", {
+                detail: { message: "help me tune policies" },
+              }),
+            )
+          }
+          className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 p-4 text-left text-amber-200 hover:bg-amber-500/15"
+        >
+          <div className="text-sm font-semibold">High block rate detected. Click here for policy tuning help.</div>
+          <div className="mt-1 text-xs text-amber-200/80">
+            Block rate: {Math.round(blockRate * 100)}%
+          </div>
+        </button>
+      )}
 
       <section className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <div className="rounded-xl border border-[#30363d] bg-[#161b22] p-4">
@@ -124,7 +148,14 @@ export default function DashboardOverviewPage() {
               <li key={action.action_id} className="rounded-lg border border-[#30363d] bg-[#0d1117] p-3">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-[#f0f6fc]">{action.tool_name}</span>
-                  <span className="text-xs uppercase text-[#8b949e]">{action.decision}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs uppercase text-[#8b949e]">{action.decision}</span>
+                    {action.mandatory ? (
+                      <span className="rounded bg-[#e1a400]/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#f2cc60] ring-1 ring-[#e1a400]/30">
+                        MANDATORY
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
                 <p className="mt-1 text-xs text-[#8b949e]">{new Date(action.timestamp).toLocaleString()}</p>
               </li>

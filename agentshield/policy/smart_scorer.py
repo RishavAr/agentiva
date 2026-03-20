@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
+import fnmatch
+import re
 
 
 @dataclass
@@ -35,12 +37,18 @@ class SmartRiskScorer:
         self.enable_llm_judge = enable_llm_judge
         self.llm_client = llm_client
         self._agent_action_counts: Dict[str, int] = {}
+        self._whitelists: Dict[str, Any] = {}
+
+    def configure_policy_context(self, *, whitelists: Optional[Dict[str, Any]] = None) -> None:
+        self._whitelists = whitelists or {}
 
     def score_action(
         self,
         tool_name: str,
         arguments: Dict[str, Any],
         agent_id: str = "default",
+        context: Optional[Dict[str, Any]] = None,
+        agent_role: Optional[str] = None,
         timestamp: Optional[datetime] = None,
         recent_actions_per_minute: int = 1,
         bulk_size: int = 1,
@@ -87,8 +95,87 @@ class SmartRiskScorer:
                 signals.append(signal)
 
         score = max(0.0, min(1.0, round(weighted, 4)))
+
+        # Context-aware adjustments (self-access, authorized roles, known support context).
+        ctx = context or {}
+        ctx_adjust = 0.0
+        if not ctx:
+            ctx_adjust += 0.15
+        else:
+            requested_by = str(ctx.get("requested_by", "")).lower()
+            customer_id_match = ctx.get("customer_id_match")
+            user_role = str(ctx.get("user_role", "")).lower()
+            session_type = str(ctx.get("session_type", "")).lower()
+
+            if requested_by == "customer" and customer_id_match is True:
+                ctx_adjust -= 0.15
+            if session_type == "support_ticket":
+                ctx_adjust -= 0.05
+            if customer_id_match is False:
+                ctx_adjust += 0.2
+
+            if user_role == "doctor":
+                fields = arguments.get("fields", [])
+                if isinstance(fields, list):
+                    fields_str = " ".join(str(x).lower() for x in fields)
+                else:
+                    fields_str = str(fields).lower()
+                if "medical" in fields_str or "medical_history" in fields_str:
+                    ctx_adjust -= 0.1
+
+            # Minimal role-aware reduction for sales agents emailing externally.
+            if agent_role == "sales_agent" and tool_name == "send_email":
+                to = str(arguments.get("to", ""))
+                if "@yourcompany.com" not in to:
+                    ctx_adjust -= 0.1
+
+        if ctx_adjust != 0.0:
+            score = max(0.0, min(1.0, round(score + ctx_adjust, 4)))
+
+        # Whitelist-based risk reduction/increase (trusted domains/endpoints, safe shell commands).
+        wl_adjust = 0.0
+        if self._whitelists:
+            tool_lower = tool_name.lower()
+            args = arguments or {}
+
+            trusted_domains = self._whitelists.get("trusted_domains") or []
+            trusted_email_domains = self._whitelists.get("trusted_email_domains") or []
+            safe_shell_commands = self._whitelists.get("safe_shell_commands") or []
+
+            if "call_external_api" in tool_lower:
+                url = str(args.get("url", "") or "")
+                domain = ""
+                m = re.search(r"^https?://([^/]+)", url)
+                if m:
+                    domain = m.group(1)
+                if domain:
+                    if any(fnmatch.fnmatch(domain, p) for p in trusted_domains):
+                        wl_adjust -= 0.15
+                    else:
+                        wl_adjust += 0.15
+
+            if "send_email" in tool_lower:
+                to = str(args.get("to", "") or "")
+                if to:
+                    if any(fnmatch.fnmatch(to, p) for p in trusted_email_domains):
+                        wl_adjust -= 0.05
+
+            if "run_shell_command" in tool_lower:
+                cmd = str(args.get("command", "") or "")
+                if cmd and safe_shell_commands:
+                    if any(fnmatch.fnmatch(cmd, pat) for pat in safe_shell_commands):
+                        wl_adjust -= 0.1
+                    else:
+                        wl_adjust += 0.1
+
+        if wl_adjust != 0.0:
+            score = max(0.0, min(1.0, round(score + wl_adjust, 4)))
+
         recommendation = self._recommend(score)
-        explanation = f"Risk score {score:.2f} based on {len(signals)} active signal(s)."
+        explanation = (
+            f"Risk score {score:.2f} based on {len(signals)} active signal(s)."
+            + (f" context_adjust={ctx_adjust:+.2f}" if ctx_adjust != 0.0 else "")
+        )
 
         if self.enable_llm_judge and self.llm_client:
             llm_signal = self._llm_judge(tool_name, arguments, score)

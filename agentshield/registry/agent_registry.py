@@ -17,6 +17,7 @@ class Agent:
     blocked_actions: int
     created_at: str
     status: str
+    role: str | None = None
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -28,13 +29,22 @@ class AgentRegistry:
     def __init__(self):
         self._agents: Dict[str, Agent] = {}
 
-    def register_agent(self, agent_id, name, owner, allowed_tools, max_risk_tolerance) -> Agent:
+    def register_agent(
+        self,
+        agent_id,
+        name,
+        owner,
+        allowed_tools,
+        max_risk_tolerance,
+        role: str | None = None,
+    ) -> Agent:
         agent = Agent(
             id=agent_id,
             name=name,
             owner=owner,
             allowed_tools=list(allowed_tools),
             max_risk_tolerance=float(max_risk_tolerance),
+            role=role,
             reputation_score=0.5,
             total_actions=0,
             blocked_actions=0,

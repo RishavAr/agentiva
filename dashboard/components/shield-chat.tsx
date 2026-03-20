@@ -1,79 +1,170 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { MessageCircle, Send, Shield, X } from "lucide-react";
 
 const API_BASE = "http://localhost:8000";
 
 type ChatPayload = {
   answer: string;
-  data: unknown;
-  follow_up_suggestions: string[];
-  mode?: string;
+  suggestions: string[];
 };
 
-function DataBlock({ data }: { data: unknown }) {
-  if (data == null) return null;
-  if (typeof data === "string") {
-    return <p className="mt-2 text-sm text-[#8b949e]">{data}</p>;
+const FENCE_RE = /```[\s\S]*?```/g;
+
+function sanitizeAnswer(text: string): string {
+  const clean = (text || "").replace(FENCE_RE, "").trim();
+  const lines = clean.split("\n").filter((line) => {
+    const t = line.trim();
+    if (!t) return true;
+    // Strip any stray JSON blocks/arrays or hint echoes.
+    if ((t.startsWith("{") && t.endsWith("}")) || (t.startsWith("[") && t.endsWith("]"))) return false;
+    if (t.includes('"hint"') || t.includes("'hint'")) return false;
+    return true;
+  });
+  return lines.join("\n").trim();
+}
+
+function riskColor(score: number): string {
+  if (score > 0.7) return "text-[#ef4444]"; // red
+  if (score >= 0.4) return "text-[#f59e0b]"; // amber
+  return "text-[#22c55e]"; // green
+}
+
+function renderNumbers(segment: string): ReactNode[] {
+  const out: ReactNode[] = [];
+  const numRe = /\b\d+(?:\.\d+)?\b/g;
+  let last = 0;
+  for (const m of segment.matchAll(numRe)) {
+    const idx = m.index ?? 0;
+    const raw = m[0];
+    if (idx > last) out.push(segment.slice(last, idx));
+    out.push(<strong key={`${idx}-${raw}`}>{raw}</strong>);
+    last = idx + raw.length;
   }
-  if (Array.isArray(data)) {
-    if (data.length === 0) {
-      return <p className="mt-2 text-sm text-[#8b949e]">(empty)</p>;
+  if (last < segment.length) out.push(segment.slice(last));
+  return out;
+}
+
+function renderInline(text: string): ReactNode[] {
+  // Tool names in monospace: we rely on backend wrapping tool tokens with backticks: `tool_name`
+  const out: ReactNode[] = [];
+  const parts = text.split("`");
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (!part) continue;
+    if (i % 2 === 1) {
+      out.push(
+        <span key={`code-${i}`} className="font-mono text-[#c9d1d9]">
+          {part}
+        </span>
+      );
+    } else {
+      // Color risk scores: parse occurrences like "risk: 0.90"
+      const riskRe = /\b(risk\s*[:=]?\s*)(0(?:\.\d+)?|1(?:\.0+)?)\b/gi;
+      let last = 0;
+      for (const m of part.matchAll(riskRe)) {
+        const idx = m.index ?? 0;
+        const full = m[0];
+        const v = parseFloat(m[2]);
+        if (idx > last) out.push(...renderNumbers(part.slice(last, idx)));
+        const prefix = m[1] ?? "risk: ";
+        out.push(
+          <span key={`risk-${idx}`}>
+            {prefix}
+            <span className={riskColor(v)}>
+              <strong>{m[2]}</strong>
+            </span>
+          </span>
+        );
+        // prefix is not preserved perfectly; we keep the surrounding text as-is by reusing the full match.
+        last = idx + full.length;
+      }
+      if (last < part.length) out.push(...renderNumbers(part.slice(last)));
     }
-    const first = data[0];
-    if (typeof first === "string") {
-      return (
-        <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-[#c9d1d9]">
-          {data.map((s, i) => (
-            <li key={i}>{s}</li>
+  }
+  return out;
+}
+
+function FormattedAnswer({ text }: { text: string }) {
+  const clean = sanitizeAnswer(text);
+  if (!clean) return null;
+
+  const lines = clean.split("\n");
+  const nodes: ReactNode[] = [];
+
+  const bulletRe = /^\s*[-*•]\s+/;
+  const numberedRe = /^\s*\d+\.\s+/;
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (!trimmed) {
+      i++;
+      continue;
+    }
+
+      // Render YAML rule snippets as monospaced pre blocks.
+      // We detect by "- name:" which our backend uses for policy additions.
+      if (trimmed.startsWith("- name:")) {
+        const yamlLines: string[] = [];
+        while (i < lines.length) {
+          const raw = lines[i];
+          const t = raw.trim();
+          if (!t) {
+            yamlLines.push(raw);
+            i++;
+            continue;
+          }
+          if (t.startsWith("- name:") || raw.startsWith("  ") || raw.startsWith("\t")) {
+            yamlLines.push(raw);
+            i++;
+            continue;
+          }
+          break;
+        }
+        nodes.push(
+          <pre
+            key={`yaml-${i}`}
+            className="mt-2 whitespace-pre-wrap rounded border border-[#30363d] bg-[#0d1117] p-2 font-mono text-[11px] leading-relaxed text-[#c9d1d9]"
+          >
+            {yamlLines.join("\n")}
+          </pre>,
+        );
+        continue;
+      }
+
+    if (bulletRe.test(trimmed) || numberedRe.test(trimmed)) {
+      const items: string[] = [];
+      while (i < lines.length) {
+        const t = lines[i].trim();
+        if (!t || !(bulletRe.test(t) || numberedRe.test(t))) break;
+        items.push(t.replace(bulletRe, "").replace(numberedRe, ""));
+        i++;
+      }
+      nodes.push(
+        <ul key={`ul-${i}`} className="mt-2 list-disc space-y-1 pl-5">
+          {items.map((it, idx) => (
+            <li key={`${i}-${idx}`} className="break-words">
+              {renderInline(it)}
+            </li>
           ))}
         </ul>
       );
+      continue;
     }
-    if (typeof first === "object" && first !== null) {
-      const keys = Object.keys(first as object);
-      return (
-        <div className="mt-2 max-h-52 overflow-auto rounded border border-[#30363d]">
-          <table className="w-full min-w-[260px] text-left text-xs">
-            <thead className="sticky top-0 bg-[#0d1117] text-[#8b949e]">
-              <tr>
-                {keys.map((k) => (
-                  <th key={k} className="px-2 py-1.5 font-medium">
-                    {k}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {(data as Record<string, unknown>[]).map((row, i) => (
-                <tr key={i} className="border-t border-[#30363d]">
-                  {keys.map((k) => (
-                    <td
-                      key={k}
-                      className="max-w-[140px] break-words px-2 py-1 font-mono text-[11px] text-[#c9d1d9]"
-                    >
-                      {typeof row[k] === "object" && row[k] !== null
-                        ? JSON.stringify(row[k])
-                        : String(row[k] ?? "")}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      );
-    }
-  }
-  if (typeof data === "object") {
-    return (
-      <pre className="mt-2 max-h-52 overflow-auto rounded border border-[#30363d] bg-[#0d1117] p-2 text-[11px] leading-relaxed text-[#c9d1d9]">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+
+    nodes.push(
+      <p key={`p-${i}`} className="whitespace-pre-wrap leading-relaxed">
+        {renderInline(trimmed)}
+      </p>
     );
+    i++;
   }
-  return <span className="text-sm">{String(data)}</span>;
+
+  return <>{nodes}</>;
 }
 
 type UserMsg = { id: string; role: "user"; text: string };
@@ -81,9 +172,7 @@ type AssistantMsg = {
   id: string;
   role: "assistant";
   answer: string;
-  data: unknown;
-  follow_up_suggestions: string[];
-  mode?: string;
+  suggestions: string[];
 };
 type Msg = UserMsg | AssistantMsg;
 
@@ -96,9 +185,7 @@ export function ShieldChatPanel() {
   const [streaming, setStreaming] = useState<{
     full: string;
     pos: number;
-    data: unknown;
     suggestions: string[];
-    mode: string;
   } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -123,9 +210,7 @@ export function ShieldChatPanel() {
           id,
           role: "assistant",
           answer: streaming.full,
-          data: streaming.data,
-          follow_up_suggestions: streaming.suggestions,
-          mode: streaming.mode,
+          suggestions: streaming.suggestions,
         },
       ]);
       setStreaming(null);
@@ -156,12 +241,11 @@ export function ShieldChatPanel() {
           throw new Error(await res.text());
         }
         const payload = (await res.json()) as ChatPayload;
+        const clean = sanitizeAnswer(payload.answer);
         setStreaming({
-          full: payload.answer,
+          full: clean,
           pos: 0,
-          data: payload.data,
-          suggestions: payload.follow_up_suggestions ?? [],
-          mode: payload.mode ?? "basic",
+          suggestions: payload.suggestions ?? [],
         });
       } catch (e) {
         setMessages((m) => [
@@ -170,9 +254,7 @@ export function ShieldChatPanel() {
             id: crypto.randomUUID(),
             role: "assistant",
             answer: `Something went wrong: ${e instanceof Error ? e.message : "request failed"}`,
-            data: {},
-            follow_up_suggestions: ["Give me a session summary"],
-            mode: "basic",
+            suggestions: ["Give me a session overview"],
           },
         ]);
       } finally {
@@ -181,6 +263,19 @@ export function ShieldChatPanel() {
     },
     [busy]
   );
+
+  useEffect(() => {
+    const handler = (ev: Event) => {
+      const ce = ev as CustomEvent<{ message?: string }>;
+      const msg = ce.detail?.message;
+      if (typeof msg !== "string" || !msg.trim()) return;
+      setOpen(true);
+      // Fire-and-forget: send() handles deduping when busy.
+      void send(msg.trim());
+    };
+    window.addEventListener("agentshield:openChat", handler as EventListener);
+    return () => window.removeEventListener("agentshield:openChat", handler as EventListener);
+  }, [send]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,16 +353,10 @@ export function ShieldChatPanel() {
                   <Shield className="h-4 w-4 text-[#3fb950]" />
                 </div>
                 <div className="flex max-w-[90%] flex-col rounded-2xl rounded-bl-md border border-[#30363d] bg-[#0d1117] px-3 py-2 text-sm text-[#c9d1d9]">
-                  {m.mode === "ai-powered" && (
-                    <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#58a6ff]">
-                      AI-powered
-                    </p>
-                  )}
-                  <p className="whitespace-pre-wrap">{m.answer}</p>
-                  <DataBlock data={m.data} />
-                  {m.follow_up_suggestions.length > 0 && (
+                  <FormattedAnswer text={m.answer} />
+                  {m.suggestions.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
-                      {m.follow_up_suggestions.map((s) => (
+                      {m.suggestions.map((s) => (
                         <button
                           key={s}
                           type="button"
@@ -290,17 +379,10 @@ export function ShieldChatPanel() {
                 <Shield className="h-4 w-4 text-[#3fb950]" />
               </div>
               <div className="max-w-[90%] rounded-2xl rounded-bl-md border border-[#30363d] bg-[#0d1117] px-3 py-2 text-sm text-[#c9d1d9]">
-                {streaming.mode === "ai-powered" && (
-                  <p className="mb-1 text-[10px] font-medium uppercase tracking-wide text-[#58a6ff]">
-                    AI-powered
-                  </p>
-                )}
-                <p className="whitespace-pre-wrap">
-                  {streaming.full.slice(0, streaming.pos)}
-                  {streaming.pos < streaming.full.length ? (
-                    <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-[#58a6ff]" />
-                  ) : null}
-                </p>
+                <FormattedAnswer text={streaming.full.slice(0, streaming.pos)} />
+                {streaming.pos < streaming.full.length ? (
+                  <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-[#58a6ff]" />
+                ) : null}
               </div>
             </div>
           )}
