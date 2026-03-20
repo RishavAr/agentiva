@@ -26,10 +26,19 @@
         --accent-soft: rgba(59, 130, 246, 0.2);
         --danger: #ef4444;
         --warning: #f59e0b;
+        --kw: #ff7b72;
+        --str: #a5d6ff;
+        --fn: #d2a8ff;
+        --cmt: #8b949e;
+        --nav-h: 72px;
       }
 
       * {
         box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
       }
 
       html,
@@ -39,24 +48,175 @@
         background: var(--bg);
         color: var(--text);
         font-family: "Outfit", system-ui, -apple-system, sans-serif;
-        scroll-behavior: smooth;
+      }
+
+      /* Global: grid + noise */
+      .page-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-color: var(--bg);
+        background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
+        background-size: 28px 28px;
+      }
+
+      .noise {
+        position: fixed;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        opacity: 0.045;
+        mix-blend-mode: overlay;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      .wrap {
+        position: relative;
+        z-index: 2;
       }
 
       .container {
         width: min(1120px, 92vw);
         margin: 0 auto;
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+      }
+
+      /* Fixed nav */
+      .site-nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        height: var(--nav-h);
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(29, 38, 53, 0.65);
+        background: rgba(6, 8, 13, 0.72);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+      }
+
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: min(1120px, 92vw);
+        margin: 0 auto;
+      }
+
+      .logo {
+        font-weight: 800;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+        color: var(--text);
+        text-decoration: none;
+      }
+
+      .logo span {
+        color: var(--accent);
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: clamp(12px, 3vw, 28px);
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .nav-links a {
+        color: #b8c7e6;
+        text-decoration: none;
+        font-size: 0.92rem;
+        font-weight: 500;
+        transition: color 0.2s ease;
+      }
+
+      .nav-links a:hover {
+        color: #fff;
       }
 
       section {
-        padding: 84px 0;
+        padding: 96px 0;
       }
 
+      .section-head {
+        text-align: center;
+        max-width: 820px;
+        margin: 0 auto 40px;
+      }
+
+      /* Fade-in */
+      .fade {
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1), transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .fade.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Hero */
       .hero {
         min-height: 100vh;
         display: flex;
         align-items: center;
-        background: radial-gradient(1200px 500px at 10% -10%, rgba(59, 130, 246, 0.25), transparent),
-          radial-gradient(900px 400px at 100% 0%, rgba(59, 130, 246, 0.16), transparent);
+        justify-content: center;
+        text-align: center;
+        padding-top: calc(var(--nav-h) + 32px);
+        padding-bottom: 48px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero-glow {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: min(720px, 95vw);
+        height: min(420px, 55vh);
+        transform: translate(-50%, -52%);
+        background: radial-gradient(closest-side, rgba(59, 130, 246, 0.35), rgba(139, 92, 246, 0.12) 55%, transparent 75%);
+        filter: blur(2px);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      .hero-inner {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .badge-tests {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #86efac;
+        background: rgba(34, 197, 94, 0.12);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+        margin-bottom: 20px;
+      }
+
+      .badge-tests::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #22c55e;
+        box-shadow: 0 0 10px #22c55e;
       }
 
       .eyebrow {
@@ -67,26 +227,38 @@
         background: var(--panel);
         font-size: 12px;
         color: #9db5da;
+        margin-bottom: 16px;
       }
 
-      h1 {
-        margin: 18px 0 10px;
-        font-size: clamp(40px, 7vw, 78px);
+      .hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(64px, 9vw, 90px);
         line-height: 0.95;
+        font-weight: 800;
+        letter-spacing: -0.04em;
       }
 
       .tagline {
         margin: 0;
-        font-size: clamp(20px, 2.8vw, 34px);
+        font-size: clamp(22px, 3.2vw, 36px);
+        font-weight: 500;
         color: #c6d7f3;
       }
 
+      .tagline .grad {
+        background: linear-gradient(135deg, #3b82f6 0%, #a855f7 50%, #c084fc 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+      }
+
       .subtitle {
-        margin-top: 16px;
+        margin-top: 18px;
         color: var(--muted);
-        max-width: 780px;
-        font-size: clamp(16px, 2vw, 20px);
-        line-height: 1.6;
+        max-width: 720px;
+        font-size: clamp(16px, 2vw, 19px);
+        line-height: 1.65;
       }
 
       .row {
@@ -94,6 +266,7 @@
         flex-wrap: wrap;
         gap: 14px;
         margin-top: 28px;
+        justify-content: center;
       }
 
       .btn {
@@ -101,22 +274,23 @@
         align-items: center;
         justify-content: center;
         gap: 8px;
-        padding: 12px 18px;
+        padding: 12px 20px;
         border-radius: 10px;
         text-decoration: none;
         font-weight: 600;
         border: 1px solid var(--border);
-        transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
       }
 
       .btn:hover {
-        transform: translateY(-1px);
+        transform: translateY(-2px);
       }
 
       .btn-primary {
         color: #fff;
         background: var(--accent);
         border-color: #2967cc;
+        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.25);
       }
 
       .btn-secondary {
@@ -125,11 +299,13 @@
       }
 
       .terminal {
-        margin-top: 26px;
+        margin-top: 32px;
+        width: min(720px, 100%);
         background: var(--panel);
         border: 1px solid var(--border);
         border-radius: 14px;
         overflow: hidden;
+        text-align: left;
       }
 
       .terminal-top {
@@ -161,29 +337,89 @@
 
       .terminal pre {
         margin: 0;
-        padding: 16px;
-        color: #b9cbeb;
-        font: 500 14px/1.6 "JetBrains Mono", monospace;
+        padding: 18px;
+        font: 500 14px/1.65 "JetBrains Mono", monospace;
         overflow-x: auto;
+        min-height: 132px;
+      }
+
+      .syntax-kw {
+        color: var(--kw);
+      }
+
+      .syntax-str {
+        color: var(--str);
+      }
+
+      .syntax-fn {
+        color: var(--fn);
+      }
+
+      .syntax-cmt {
+        color: var(--cmt);
+      }
+
+      .syntax-name {
+        color: #e6edf7;
+      }
+
+      /* Problem stats */
+      #problem h2 {
+        text-align: center;
       }
 
       .grid-3 {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
+        gap: 18px;
       }
 
-      .card {
+      .stat-card {
         background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 18px;
+        border-radius: 16px;
+        padding: 24px 22px;
+        border-top: 4px solid #ef4444;
+        transition: transform 0.22s ease, box-shadow 0.22s ease;
       }
 
-      .stat {
-        font-size: clamp(34px, 4.4vw, 52px);
+      .stat-card:nth-child(2) {
+        border-top-color: #f59e0b;
+      }
+
+      .stat-card:nth-child(3) {
+        border-top-color: #f97316;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      }
+
+      .stat-num {
+        font-size: clamp(72px, 8vw, 96px);
         font-weight: 800;
-        color: #7cb1ff;
+        line-height: 1;
+        letter-spacing: -0.03em;
+      }
+
+      .stat-card:nth-child(1) .stat-num {
+        color: #f87171;
+      }
+
+      .stat-card:nth-child(2) .stat-num {
+        color: #fbbf24;
+      }
+
+      .stat-card:nth-child(3) .stat-num {
+        color: #fb923c;
+      }
+
+      .stat-label {
+        margin-top: 14px;
+        color: #b4c2db;
+        font-size: 1rem;
+        line-height: 1.45;
       }
 
       h2 {
@@ -191,132 +427,344 @@
         font-size: clamp(30px, 4vw, 46px);
       }
 
+      /* Incidents */
       .incident {
+        position: relative;
         background: var(--panel-soft);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px;
-        color: #ccdaef;
+        border-radius: 14px;
+        padding: 22px 22px 22px 22px;
+        color: #d8e4fb;
+      }
+
+      .incident-tag {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        color: #fecaca;
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        padding: 4px 10px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+      }
+
+      .incident h3 {
+        margin: 0 0 8px;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #f0f6fc;
+      }
+
+      .incident p {
+        margin: 0;
+        font-size: 0.95rem;
+        line-height: 1.55;
+        color: #a8bddb;
       }
 
       .code-block {
         background: #0b1019;
         border: 1px solid var(--border);
         border-radius: 14px;
-        padding: 18px;
+        padding: 22px;
       }
 
       .code-block pre {
         margin: 0;
-        color: #c2d6f8;
-        font: 500 15px/1.7 "JetBrains Mono", monospace;
+        font: 500 15px/1.75 "JetBrains Mono", monospace;
       }
 
       .flow {
         margin-top: 18px;
-        padding: 16px;
+        padding: 16px 18px;
         border-radius: 12px;
         border: 1px solid var(--border);
         background: var(--panel-soft);
-        font: 500 13px/1.8 "JetBrains Mono", monospace;
+        font: 500 13px/1.85 "JetBrains Mono", monospace;
         color: #a8c1eb;
+        text-align: center;
       }
 
+      /* Modes */
       .modes {
         display: grid;
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 12px;
+        gap: 14px;
       }
 
       .mode-card {
         background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px;
+        border-radius: 14px;
+        padding: 0;
+        overflow: hidden;
+        transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
       }
 
-      .mode-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: 9px;
-        background: var(--accent-soft);
-        color: #8ab6ff;
-        font: 700 14px/30px "JetBrains Mono", monospace;
+      .mode-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(59, 130, 246, 0.45);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+      }
+
+      .mode-icon-wrap {
+        padding: 18px 16px;
+        font-size: 1.75rem;
+        line-height: 1;
         text-align: center;
       }
 
+      .mode-card:nth-child(1) .mode-icon-wrap {
+        background: linear-gradient(180deg, rgba(59, 130, 246, 0.25), transparent);
+      }
+
+      .mode-card:nth-child(2) .mode-icon-wrap {
+        background: linear-gradient(180deg, rgba(168, 85, 247, 0.25), transparent);
+      }
+
+      .mode-card:nth-child(3) .mode-icon-wrap {
+        background: linear-gradient(180deg, rgba(245, 158, 11, 0.22), transparent);
+      }
+
+      .mode-card:nth-child(4) .mode-icon-wrap {
+        background: linear-gradient(180deg, rgba(34, 197, 94, 0.2), transparent);
+      }
+
+      .mode-card:nth-child(5) .mode-icon-wrap {
+        background: linear-gradient(180deg, rgba(236, 72, 153, 0.2), transparent);
+      }
+
+      .mode-body {
+        padding: 14px 16px 18px;
+      }
+
+      .mode-body h3 {
+        margin: 0 0 6px;
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .mode-body p {
+        margin: 0;
+        font-size: 0.88rem;
+        color: #9eb0cc;
+        line-height: 1.45;
+      }
+
+      /* Demo */
       .mock {
         border: 1px solid var(--border);
         border-radius: 14px;
         background: var(--panel);
-        padding: 18px;
+        padding: 22px;
       }
 
-      .demo-output {
-        margin-top: 10px;
+      .demo-caption {
+        font-size: 14px;
+        color: #9ab5dd;
+        margin-bottom: 14px;
+      }
+
+      .demo-lines {
         background: #0a0f18;
-        border-radius: 10px;
+        border-radius: 12px;
         border: 1px solid var(--border);
-        padding: 12px;
-        font: 500 12px/1.6 "JetBrains Mono", monospace;
-        color: #bbceed;
-        white-space: pre-wrap;
+        padding: 8px 0;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
       }
 
-      .chip-grid {
-        display: grid;
-        grid-template-columns: repeat(7, minmax(0, 1fr));
+      .demo-line {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(29, 38, 53, 0.65);
+      }
+
+      .demo-line:last-of-type {
+        border-bottom: none;
+      }
+
+      .demo-left {
+        display: flex;
         gap: 10px;
+        align-items: flex-start;
+        text-align: left;
+        flex: 1;
+        min-width: 0;
+      }
+
+      .demo-line.blocked .demo-text {
+        color: #fca5a5;
+      }
+
+      .demo-line.shadow .demo-text {
+        color: #fcd34d;
+      }
+
+      .demo-risk {
+        flex-shrink: 0;
+        color: #8da3c4;
+        font-size: 11px;
+        padding-top: 2px;
+      }
+
+      .demo-summary {
+        margin: 12px 14px 10px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.35);
+        color: #86efac;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 12px;
+        font-weight: 600;
+        text-align: center;
+      }
+
+      /* Chips */
+      .chip-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
       }
 
       .chip {
-        text-align: center;
-        border: 1px solid var(--border);
-        background: var(--panel);
-        border-radius: 10px;
-        padding: 12px 8px;
+        padding: 10px 18px;
+        border-radius: 999px;
+        border: 1px solid rgba(29, 38, 53, 0.9);
+        background: rgba(13, 17, 23, 0.65);
         color: #cbdaf2;
         font-size: 13px;
+        font-weight: 500;
+        transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+      }
+
+      .chip:hover {
+        border-color: var(--accent);
+        color: #fff;
+        transform: translateY(-2px);
+      }
+
+      /* Trust + CTA */
+      .cta-section {
+        position: relative;
+        overflow: hidden;
+      }
+
+      .cta-glow {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(600px 400px at 50% 30%, rgba(59, 130, 246, 0.22), transparent 65%);
       }
 
       .trust-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
+        gap: 14px;
       }
 
       .trust {
         border: 1px solid var(--border);
-        border-radius: 12px;
+        border-radius: 14px;
         background: var(--panel);
-        padding: 14px;
+        padding: 20px 16px;
+        text-align: center;
+      }
+
+      .trust-num {
+        font-size: clamp(32px, 4.2vw, 52px);
+        font-weight: 800;
+        color: #4ade80;
+        text-shadow: 0 0 28px rgba(74, 222, 128, 0.35);
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+      }
+
+      .trust-text-title {
+        font-size: clamp(22px, 2.8vw, 32px);
+        font-weight: 800;
+        color: #4ade80;
+        text-shadow: 0 0 24px rgba(74, 222, 128, 0.35);
+        line-height: 1.2;
+        margin-bottom: 4px;
+      }
+
+      .trust p {
+        margin: 12px 0 0;
+        font-size: 0.9rem;
+        color: #9eb0cc;
+        line-height: 1.45;
+      }
+
+      .terminal-cta {
+        margin-top: 24px;
+        display: inline-flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: min(520px, 100%);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        background: #050810;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .terminal-cta-bar {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11px;
+        color: #6b7a95;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      .terminal-cta-body {
+        padding: 14px 16px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 14px;
+        color: #4ade80;
+        text-align: left;
+      }
+
+      .terminal-cta-body::before {
+        content: "$ ";
+        color: #6b7a95;
       }
 
       footer {
         border-top: 1px solid var(--border);
-        padding: 24px 0 40px;
+        padding: 28px 0 48px;
       }
 
-      footer .links {
+      footer .footer-line {
         display: flex;
         flex-wrap: wrap;
-        gap: 16px;
+        align-items: center;
+        justify-content: center;
+        gap: 12px 24px;
+        font-size: 0.92rem;
+        color: #8fa6c9;
       }
 
       footer a {
-        color: #9fbae2;
+        color: #b8ccea;
         text-decoration: none;
+        transition: color 0.2s ease;
       }
 
-      .fade {
-        opacity: 0;
-        transform: translateY(20px);
-        transition: opacity 0.5s ease, transform 0.5s ease;
+      footer a:hover {
+        color: #fff;
       }
 
-      .fade.show {
-        opacity: 1;
-        transform: translateY(0);
+      footer .sep {
+        opacity: 0.35;
+        user-select: none;
       }
 
       @media (max-width: 980px) {
@@ -326,152 +774,350 @@
           grid-template-columns: 1fr;
         }
 
-        .chip-grid {
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+        .nav-links {
+          gap: 10px 16px;
         }
       }
     </style>
   </head>
   <body>
-    <section class="hero">
-      <div class="container fade">
-        <span class="eyebrow">Open-source AI Agent Safety Runtime</span>
-        <h1>AgentShield</h1>
-        <p class="tagline">Preview deployments for AI agents</p>
-        <p class="subtitle">
-          See what your AI agent would do before it does it. Shadow mode. Simulation. Approval.
-          Rollback. Open-source.
-        </p>
-        <div class="row">
-          <a class="btn btn-primary" href="#get-started">Get Started — pip install agentshield</a>
-          <a class="btn btn-secondary" href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-        </div>
-        <div class="terminal">
-          <div class="terminal-top">
-            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
-          </div>
-          <pre id="typed-code"></pre>
-        </div>
-      </div>
-    </section>
+    <div class="page-bg" aria-hidden="true"></div>
+    <div class="noise" aria-hidden="true"></div>
 
-    <section>
-      <div class="container fade">
-        <h2>AI agents are breaking things in production</h2>
-        <div class="grid-3">
-          <div class="card"><div class="stat">88%</div><div>of companies had AI agent security incidents</div></div>
-          <div class="card"><div class="stat">48%</div><div>of security pros rank agentic AI as #1 attack vector</div></div>
-          <div class="card"><div class="stat">$1M+</div><div>average cost of AI agent failures (EY 2026)</div></div>
-        </div>
-        <div class="grid-3" style="margin-top:14px;">
-          <div class="incident">Amazon Kiro outage: AI agent deleted + recreated AWS environment.</div>
-          <div class="incident">Microsoft Copilot: zero-click exfiltration from hidden prompts.</div>
-          <div class="incident">Replit Agent: deletion of 1,206 customer records.</div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container fade">
-        <h2>Four lines to protect any agent</h2>
-        <div class="code-block">
-<pre>from agentshield import AgentShield
-shield = AgentShield(mode="shadow")
-tools = shield.protect([your_tools])
-print(shield.get_audit_log())</pre>
-        </div>
-        <div class="flow">Agent → AgentShield → Policy Check → Decision (Allow / Shadow / Block / Approve) → Action or Log</div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container fade">
-        <h2>Five operating modes</h2>
-        <div class="modes">
-          <div class="mode-card"><div class="mode-icon">EYE</div><h3>Shadow Mode</h3><p>Observe without executing</p></div>
-          <div class="mode-card"><div class="mode-icon">SIM</div><h3>Simulation</h3><p>Preview impact before acting</p></div>
-          <div class="mode-card"><div class="mode-icon">HITL</div><h3>Approval</h3><p>Human-in-the-loop for risky actions</p></div>
-          <div class="mode-card"><div class="mode-icon">CHAT</div><h3>Negotiation</h3><p>Agent gets feedback to self-correct</p></div>
-          <div class="mode-card"><div class="mode-icon">UNDO</div><h3>Rollback</h3><p>Undo what the agent did</p></div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container fade">
-        <h2>Watch AgentShield in action</h2>
-        <div class="mock">
-          <div style="font-size:14px;color:#9ab5dd;">Live demo output (12 scenarios)</div>
-          <div class="demo-output">[1/12] internal update -> SHADOW
-[2/12] external confidential email -> BLOCKED
-[3/12] #general post -> SHADOW
-[4/12] jira ticket -> SHADOW
-[5/12] destructive SQL -> BLOCKED
-[6/12] customer PII read -> SHADOW
-[7/12] suspicious external API -> BLOCKED
-[8/12] bulk delete resource -> BLOCKED
-[9/12] large fund transfer -> BLOCKED
-[10/12] security ticket -> SHADOW
-[11/12] credential reset email -> SHADOW
-[12/12] private deployment update -> SHADOW
-
-Summary: 5 BLOCKED, 7 SHADOWED</div>
-        </div>
-      </div>
-    </section>
-
-    <section>
-      <div class="container fade">
-        <h2>Works with every agent framework</h2>
-        <div class="chip-grid">
-          <div class="chip">LangChain</div>
-          <div class="chip">CrewAI</div>
-          <div class="chip">OpenAI</div>
-          <div class="chip">MCP</div>
-          <div class="chip">AutoGen</div>
-          <div class="chip">MetaGPT</div>
-          <div class="chip">Anthropic</div>
-        </div>
-      </div>
-    </section>
-
-    <section id="get-started">
-      <div class="container fade">
-        <h2>Built for production trust</h2>
-        <div class="trust-grid">
-          <div class="trust"><strong>24,000+ tests</strong><div>Massive parameterized safety coverage</div></div>
-          <div class="trust"><strong>64+ attack vectors</strong><div>Real-world incidents + adversarial patterns</div></div>
-          <div class="trust"><strong>Compliance exports</strong><div>SOC2 / GDPR / EU AI Act ready evidence</div></div>
-          <div class="trust"><strong>Open-source</strong><div>Apache 2.0 with transparent policy logic</div></div>
-        </div>
-        <div class="row">
-          <a class="btn btn-primary" href="https://pypi.org/project/agentshield/" target="_blank" rel="noopener noreferrer">pip install agentshield</a>
-          <a class="btn btn-secondary" href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">GitHub Repo</a>
-        </div>
-      </div>
-    </section>
-
-    <footer>
-      <div class="container">
-        <div class="links">
+    <nav class="site-nav" aria-label="Primary">
+      <div class="nav-inner container">
+        <a class="logo" href="#">Agent<span>Shield</span></a>
+        <div class="nav-links">
+          <a href="#problem">Problem</a>
+          <a href="#features">Features</a>
+          <a href="#demo">Demo</a>
           <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">GitHub</a>
-          <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a>
-          <span style="font-family:'JetBrains Mono', monospace;color:#8fb8ff;">pip install agentshield</span>
         </div>
       </div>
-    </footer>
+    </nav>
+
+    <div class="wrap">
+      <section class="hero">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <div class="container hero-inner fade">
+          <div class="badge-tests">24,000+ tests passing</div>
+          <span class="eyebrow">Open-source AI Agent Safety Runtime</span>
+          <h1>AgentShield</h1>
+          <p class="tagline">Preview deployments for <span class="grad">AI agents</span></p>
+          <p class="subtitle">
+            See what your AI agent would do before it does it. Shadow mode. Simulation. Approval. Rollback.
+            Open-source.
+          </p>
+          <div class="row">
+            <a class="btn btn-primary" href="#get-started">Get Started — pip install agentshield</a>
+            <a
+              class="btn btn-secondary"
+              href="https://github.com/RishavAr/agentshield"
+              target="_blank"
+              rel="noopener noreferrer"
+              >View on GitHub</a
+            >
+          </div>
+          <div class="terminal">
+            <div class="terminal-top">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            </div>
+            <pre id="typed-code"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="problem">
+        <div class="container fade">
+          <h2 class="section-head" style="margin-bottom: 36px">AI agents are breaking things in production</h2>
+          <div class="grid-3">
+            <div class="stat-card">
+              <div class="stat-num">88%</div>
+              <div class="stat-label">of companies had AI agent security incidents</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">48%</div>
+              <div class="stat-label">of security pros rank agentic AI as #1 attack vector</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num">$1M+</div>
+              <div class="stat-label">average cost of AI agent failures (EY 2026)</div>
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top: 18px">
+            <div class="incident">
+              <span class="incident-tag">INCIDENT</span>
+              <h3>Amazon Kiro</h3>
+              <p>AI agent deleted + recreated AWS environment.</p>
+            </div>
+            <div class="incident">
+              <span class="incident-tag">INCIDENT</span>
+              <h3>Microsoft Copilot</h3>
+              <p>Zero-click exfiltration from hidden prompts.</p>
+            </div>
+            <div class="incident">
+              <span class="incident-tag">INCIDENT</span>
+              <h3>Replit Agent</h3>
+              <p>Deletion of 1,206 customer records.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="container fade">
+          <h2 class="section-head">Four lines to protect any agent</h2>
+          <div class="code-block">
+            <pre><code><span class="syntax-kw">from</span> agentshield <span class="syntax-kw">import</span> <span class="syntax-fn">AgentShield</span>
+<span class="syntax-name">shield</span> = <span class="syntax-fn">AgentShield</span>(<span class="syntax-name">mode</span>=<span class="syntax-str">"shadow"</span>)
+<span class="syntax-name">tools</span> = <span class="syntax-name">shield</span>.<span class="syntax-fn">protect</span>([<span class="syntax-name">your_tools</span>])
+<span class="syntax-fn">print</span>(<span class="syntax-name">shield</span>.<span class="syntax-fn">get_audit_log</span>())</code></pre>
+          </div>
+          <div class="flow">
+            Agent → AgentShield → Policy Check → Decision (Allow / Shadow / Block / Approve) → Action or Log
+          </div>
+
+          <h2 class="section-head" style="margin-top: 64px">Five operating modes</h2>
+          <div class="modes">
+            <div class="mode-card">
+              <div class="mode-icon-wrap" aria-hidden="true">👁️</div>
+              <div class="mode-body">
+                <h3>Shadow Mode</h3>
+                <p>Observe without executing</p>
+              </div>
+            </div>
+            <div class="mode-card">
+              <div class="mode-icon-wrap" aria-hidden="true">🔮</div>
+              <div class="mode-body">
+                <h3>Simulation</h3>
+                <p>Preview impact before acting</p>
+              </div>
+            </div>
+            <div class="mode-card">
+              <div class="mode-icon-wrap" aria-hidden="true">✋</div>
+              <div class="mode-body">
+                <h3>Approval</h3>
+                <p>Human-in-the-loop for risky actions</p>
+              </div>
+            </div>
+            <div class="mode-card">
+              <div class="mode-icon-wrap" aria-hidden="true">💬</div>
+              <div class="mode-body">
+                <h3>Negotiation</h3>
+                <p>Agent gets feedback to self-correct</p>
+              </div>
+            </div>
+            <div class="mode-card">
+              <div class="mode-icon-wrap" aria-hidden="true">↩️</div>
+              <div class="mode-body">
+                <h3>Rollback</h3>
+                <p>Undo what the agent did</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="demo">
+        <div class="container fade">
+          <h2 class="section-head">Watch AgentShield in action</h2>
+          <div class="mock">
+            <div class="demo-caption">Live demo output (12 scenarios)</div>
+            <div class="demo-lines">
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[1/12] internal update → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.42</span>
+              </div>
+              <div class="demo-line blocked">
+                <div class="demo-left">
+                  <span>🛑</span>
+                  <span class="demo-text">[2/12] external confidential email → BLOCKED</span>
+                </div>
+                <span class="demo-risk">risk 0.91</span>
+              </div>
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[3/12] #general post → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.38</span>
+              </div>
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[4/12] jira ticket → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.44</span>
+              </div>
+              <div class="demo-line blocked">
+                <div class="demo-left">
+                  <span>🛑</span>
+                  <span class="demo-text">[5/12] destructive SQL → BLOCKED</span>
+                </div>
+                <span class="demo-risk">risk 0.95</span>
+              </div>
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[6/12] customer PII read → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.52</span>
+              </div>
+              <div class="demo-line blocked">
+                <div class="demo-left">
+                  <span>🛑</span>
+                  <span class="demo-text">[7/12] suspicious external API → BLOCKED</span>
+                </div>
+                <span class="demo-risk">risk 0.88</span>
+              </div>
+              <div class="demo-line blocked">
+                <div class="demo-left">
+                  <span>🛑</span>
+                  <span class="demo-text">[8/12] bulk delete resource → BLOCKED</span>
+                </div>
+                <span class="demo-risk">risk 0.93</span>
+              </div>
+              <div class="demo-line blocked">
+                <div class="demo-left">
+                  <span>🛑</span>
+                  <span class="demo-text">[9/12] large fund transfer → BLOCKED</span>
+                </div>
+                <span class="demo-risk">risk 0.90</span>
+              </div>
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[10/12] security ticket → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.41</span>
+              </div>
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[11/12] credential reset email → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.47</span>
+              </div>
+              <div class="demo-line shadow">
+                <div class="demo-left">
+                  <span>👁️</span>
+                  <span class="demo-text">[12/12] private deployment update → SHADOW</span>
+                </div>
+                <span class="demo-risk">risk 0.39</span>
+              </div>
+              <div class="demo-summary">✓ 5 blocked · 7 shadowed · 0 false positives</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="container fade">
+          <h2 class="section-head">Works with every agent framework</h2>
+          <div class="chip-grid">
+            <div class="chip">LangChain</div>
+            <div class="chip">CrewAI</div>
+            <div class="chip">OpenAI</div>
+            <div class="chip">MCP</div>
+            <div class="chip">AutoGen</div>
+            <div class="chip">MetaGPT</div>
+            <div class="chip">Anthropic</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="get-started" class="cta-section">
+        <div class="cta-glow" aria-hidden="true"></div>
+        <div class="container fade" style="position: relative; z-index: 1">
+          <h2 class="section-head">Built for production trust</h2>
+          <div class="trust-grid">
+            <div class="trust has-num">
+              <div class="trust-num">24,000+ tests</div>
+              <p>Massive parameterized safety coverage</p>
+            </div>
+            <div class="trust has-num">
+              <div class="trust-num">64+ attack vectors</div>
+              <p>Real-world incidents + adversarial patterns</p>
+            </div>
+            <div class="trust">
+              <div class="trust-text-title">Compliance exports</div>
+              <p>SOC2 / GDPR / EU AI Act ready evidence</p>
+            </div>
+            <div class="trust">
+              <div class="trust-text-title">Open-source</div>
+              <p>Apache 2.0 with transparent policy logic</p>
+            </div>
+          </div>
+          <div class="row">
+            <a class="btn btn-primary" href="https://pypi.org/project/agentshield/" target="_blank" rel="noopener noreferrer"
+              >pip install agentshield</a
+            >
+            <a
+              class="btn btn-secondary"
+              href="https://github.com/RishavAr/agentshield"
+              target="_blank"
+              rel="noopener noreferrer"
+              >GitHub Repo</a
+            >
+          </div>
+          <div style="text-align: center">
+            <div class="terminal-cta">
+              <div class="terminal-cta-bar">bash — agentshield</div>
+              <div class="terminal-cta-body">pip install agentshield</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="container fade">
+          <div class="footer-line">
+            <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <span class="sep">·</span>
+            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a>
+            <span class="sep">·</span>
+            <a href="https://pypi.org/project/agentshield/" target="_blank" rel="noopener noreferrer">pip install agentshield</a>
+          </div>
+        </div>
+      </footer>
+    </div>
 
     <script>
       const code = `from agentshield import AgentShield
 shield = AgentShield(mode="shadow")
 tools = shield.protect([your_tools])
 print(shield.get_audit_log())`;
+
+      function highlightPython(src) {
+        const lines = src.split("\n");
+        return lines
+          .map((line) => {
+            let s = line
+              .replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;");
+            s = s.replace(/\b(from|import|print)\b/g, '<span class="syntax-kw">$1</span>');
+            s = s.replace(/\bAgentShield\b/g, '<span class="syntax-fn">AgentShield</span>');
+            s = s.replace(/"shadow"/g, '<span class="syntax-str">"shadow"</span>');
+            s = s.replace(/\.(protect|get_audit_log)\b/g, '.<span class="syntax-fn">$1</span>');
+            s = s.replace(/\b(shield|tools|your_tools)\b/g, '<span class="syntax-name">$1</span>');
+            return s;
+          })
+          .join("\n");
+      }
+
       const el = document.getElementById("typed-code");
       let i = 0;
       const timer = setInterval(() => {
         i += 1;
         el.textContent = code.slice(0, i);
-        if (i >= code.length) clearInterval(timer);
+        if (i >= code.length) {
+          clearInterval(timer);
+          el.innerHTML = highlightPython(code);
+        }
       }, 18);
 
       const observer = new IntersectionObserver(
@@ -482,7 +1128,7 @@ print(shield.get_audit_log())`;
             }
           });
         },
-        { threshold: 0.1 }
+        { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
       );
       document.querySelectorAll(".fade").forEach((node) => observer.observe(node));
     </script>
