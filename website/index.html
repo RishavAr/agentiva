@@ -606,6 +606,10 @@
         color: #fcd34d;
       }
 
+      .demo-line.allowed .demo-text {
+        color: #86efac;
+      }
+
       .demo-risk {
         flex-shrink: 0;
         color: #8da3c4;
@@ -922,93 +926,79 @@
         <div class="container fade">
           <h2 class="section-head">Watch AgentShield in action</h2>
           <div class="mock">
-            <div class="demo-caption">Live demo output (12 scenarios)</div>
+            <div class="demo-caption">Live demo output — 100+ scenarios tested (sample lines)</div>
             <div class="demo-lines">
-              <div class="demo-line shadow">
+              <div class="demo-line allowed">
                 <div class="demo-left">
-                  <span>👁️</span>
-                  <span class="demo-text">[1/12] internal update → SHADOW</span>
+                  <span>✓</span>
+                  <span class="demo-text">[3/102] customer support reply (external) → ALLOWED</span>
                 </div>
-                <span class="demo-risk">risk 0.42</span>
+                <span class="demo-risk">risk 0.11</span>
               </div>
               <div class="demo-line blocked">
                 <div class="demo-left">
                   <span>🛑</span>
-                  <span class="demo-text">[2/12] external confidential email → BLOCKED</span>
+                  <span class="demo-text">[5/102] email body contains password: → BLOCKED</span>
                 </div>
-                <span class="demo-risk">risk 0.91</span>
+                <span class="demo-risk">risk 0.92</span>
+              </div>
+              <div class="demo-line blocked">
+                <div class="demo-left">
+                  <span>🛑</span>
+                  <span class="demo-text">[18/102] Slack message with sk_live API key → BLOCKED</span>
+                </div>
+                <span class="demo-risk">risk 0.96</span>
               </div>
               <div class="demo-line shadow">
                 <div class="demo-left">
                   <span>👁️</span>
-                  <span class="demo-text">[3/12] #general post → SHADOW</span>
+                  <span class="demo-text">[14/102] #general deployment note → SHADOW</span>
                 </div>
                 <span class="demo-risk">risk 0.38</span>
               </div>
-              <div class="demo-line shadow">
+              <div class="demo-line blocked">
                 <div class="demo-left">
-                  <span>👁️</span>
-                  <span class="demo-text">[4/12] jira ticket → SHADOW</span>
+                  <span>🛑</span>
+                  <span class="demo-text">[26/102] DROP TABLE production → BLOCKED</span>
                 </div>
-                <span class="demo-risk">risk 0.44</span>
+                <span class="demo-risk">risk 0.97</span>
               </div>
               <div class="demo-line blocked">
                 <div class="demo-left">
                   <span>🛑</span>
-                  <span class="demo-text">[5/12] destructive SQL → BLOCKED</span>
+                  <span class="demo-text">[44/102] $500K wire to offshore account → BLOCKED</span>
                 </div>
                 <span class="demo-risk">risk 0.95</span>
               </div>
-              <div class="demo-line shadow">
+              <div class="demo-line blocked">
                 <div class="demo-left">
-                  <span>👁️</span>
-                  <span class="demo-text">[6/12] customer PII read → SHADOW</span>
+                  <span>🛑</span>
+                  <span class="demo-text">[58/102] deploy production (no approval) → BLOCKED</span>
                 </div>
-                <span class="demo-risk">risk 0.52</span>
+                <span class="demo-risk">risk 0.94</span>
               </div>
               <div class="demo-line blocked">
                 <div class="demo-left">
                   <span>🛑</span>
-                  <span class="demo-text">[7/12] suspicious external API → BLOCKED</span>
+                  <span class="demo-text">[79/102] GraphQL deleteAllRecords mutation → BLOCKED</span>
                 </div>
-                <span class="demo-risk">risk 0.88</span>
+                <span class="demo-risk">risk 0.96</span>
               </div>
               <div class="demo-line blocked">
                 <div class="demo-left">
                   <span>🛑</span>
-                  <span class="demo-text">[8/12] bulk delete resource → BLOCKED</span>
+                  <span class="demo-text">[94/102] grant admin to AI agent itself → BLOCKED</span>
                 </div>
-                <span class="demo-risk">risk 0.93</span>
-              </div>
-              <div class="demo-line blocked">
-                <div class="demo-left">
-                  <span>🛑</span>
-                  <span class="demo-text">[9/12] large fund transfer → BLOCKED</span>
-                </div>
-                <span class="demo-risk">risk 0.90</span>
+                <span class="demo-risk">risk 0.98</span>
               </div>
               <div class="demo-line shadow">
                 <div class="demo-left">
                   <span>👁️</span>
-                  <span class="demo-text">[10/12] security ticket → SHADOW</span>
+                  <span class="demo-text">[99/102] CORS allow all origins → SHADOW</span>
                 </div>
-                <span class="demo-risk">risk 0.41</span>
+                <span class="demo-risk">risk 0.38</span>
               </div>
-              <div class="demo-line shadow">
-                <div class="demo-left">
-                  <span>👁️</span>
-                  <span class="demo-text">[11/12] credential reset email → SHADOW</span>
-                </div>
-                <span class="demo-risk">risk 0.47</span>
-              </div>
-              <div class="demo-line shadow">
-                <div class="demo-left">
-                  <span>👁️</span>
-                  <span class="demo-text">[12/12] private deployment update → SHADOW</span>
-                </div>
-                <span class="demo-risk">risk 0.39</span>
-              </div>
-              <div class="demo-summary">✓ 5 blocked · 7 shadowed · 0 false positives</div>
+              <div class="demo-summary">✓ 48 blocked · 22 shadowed · 32 allowed · avg risk ~0.56 · 0 false positives</div>
             </div>
           </div>
         </div>

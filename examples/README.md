@@ -5,7 +5,7 @@ This folder contains runnable demos that showcase AgentShield in realistic workf
 ## Available Examples
 
 - `live_demo.py`  
-  End-to-end simulation of a LangChain-like agent making 12 realistic actions (email, Slack, Jira, SQL, API, data access, fund transfer).  
+  End-to-end simulation of a LangChain-like agent making **100+** realistic actions across email, Slack, databases, Jira, finance, DevOps, APIs, customer data, and admin permissions — designed for the live dashboard feed.  
   Actions stream into the dashboard live feed over the AgentShield API.
 
 ## Run the Live Demo

@@ -31,6 +31,8 @@ from agentshield.interceptor.core import AgentShield
 from agentshield.policy.anomaly_detector import AnomalyDetector
 from agentshield.registry.agent_registry import AgentRegistry
 
+from agentshield.api.chat import ShieldChat, SmartChat, chat_response_to_dict
+
 # Structured logging
 logging.basicConfig(
     level=logging.INFO,
@@ -184,6 +186,13 @@ def get_shield() -> AgentShield:
 async def lifespan(_: FastAPI):
     global _shield, _start_time
     _start_time = datetime.now(timezone.utc)
+    print(
+        f"[AgentShield] OPENROUTER_API_KEY: {'SET' if os.getenv('OPENROUTER_API_KEY') else 'NOT SET'}"
+    )
+    logger.info(
+        "openrouter_api_key=%s",
+        "set" if os.getenv("OPENROUTER_API_KEY") else "not_set",
+    )
     mode = os.getenv("AGENTSHIELD_MODE", "shadow")
     policy_path = "policies/default.yaml" if os.path.exists("policies/default.yaml") else None
     await init_db()
@@ -418,6 +427,32 @@ async def list_agents() -> List[Dict[str, Any]]:
 async def deactivate_agent(agent_id: str) -> Dict[str, str]:
     _registry.deactivate_agent(agent_id)
     return {"status": "ok", "agent_id": agent_id, "new_status": "deactivated"}
+
+
+class ChatMessageRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=4000, description="Question for AgentShield chat")
+
+
+@app.get("/api/v1/chat/capabilities")
+async def chat_capabilities() -> Dict[str, Any]:
+    """Whether OpenRouter-powered (premium) chat is configured."""
+    key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    return {
+        "llm_enabled": bool(key),
+        "provider": "openrouter" if key else None,
+    }
+
+
+@app.post("/api/v1/chat")
+async def chat_with_shield(payload: ChatMessageRequest) -> Dict[str, Any]:
+    """Ask questions about agent activity using the in-memory audit log."""
+    shield = get_shield()
+    if os.getenv("OPENROUTER_API_KEY", "").strip():
+        chat = SmartChat(shield)
+    else:
+        chat = ShieldChat(shield)
+    resp = await chat.ask(payload.message.strip())
+    return chat_response_to_dict(resp)
 
 
 @app.post("/api/v1/negotiate/{action_id}")

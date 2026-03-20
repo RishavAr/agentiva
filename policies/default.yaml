@@ -1,8 +1,475 @@
 version: 1
 default_mode: shadow
 
+# Rule order matters: first match wins.
+# 1) Critical pattern blocks (always block)
+# 2) Demo outcome_tier allow (before generic external block)
+# 3) Legacy / generic blocks (e.g. external email)
+# 4) Demo outcome_tier block / shadow
+# 5) Tool-default shadows (for tests & unspecified actions)
+
 rules:
-  # Block external emails
+  # --- Critical database / destructive ---
+  - name: block_sql_drop
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "DROP"
+    action: block
+    risk_score: 0.97
+
+  - name: block_sql_delete_mass
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "DELETE"
+    action: block
+    risk_score: 0.95
+
+  - name: block_sql_truncate
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "TRUNCATE"
+    action: block
+    risk_score: 0.96
+
+  - name: block_sql_where_tautology
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "WHERE 1=1"
+    action: block
+    risk_score: 0.94
+
+  - name: block_sql_create_admin
+    tool: update_database
+    condition:
+      field: arguments.query
+      operator: contains
+      value: "CREATE admin"
+    action: block
+    risk_score: 0.93
+
+  # --- Email body secrets ---
+  - name: block_email_password_body
+    tool: send_email
+    condition:
+      field: arguments.body
+      operator: contains
+      value: "password:"
+    action: block
+    risk_score: 0.92
+
+  - name: block_email_ssn_body
+    tool: send_email
+    condition:
+      field: arguments.body
+      operator: contains
+      value: "123-45-6789"
+    action: block
+    risk_score: 0.96
+
+  - name: block_email_mass_500
+    tool: send_email
+    condition:
+      field: arguments.body
+      operator: contains
+      value: "500 recipients"
+    action: block
+    risk_score: 0.91
+
+  - name: block_email_competitor
+    tool: send_email
+    condition:
+      field: arguments.to
+      operator: contains
+      value: "competitor.com"
+    action: block
+    risk_score: 0.89
+
+  - name: block_email_forward_external
+    tool: send_email
+    condition:
+      field: arguments.forward_external
+      operator: equals
+      value: true
+    action: block
+    risk_score: 0.9
+
+  - name: block_email_personal_gmail
+    tool: send_email
+    condition:
+      field: arguments.to
+      operator: contains
+      value: "@gmail.com"
+    action: block
+    risk_score: 0.88
+
+  # --- Slack secrets / abuse ---
+  - name: block_slack_api_key
+    tool: send_slack_message
+    condition:
+      field: arguments.message
+      operator: contains
+      value: "sk_live_"
+    action: block
+    risk_score: 0.96
+
+  - name: block_slack_credit_card
+    tool: send_slack_message
+    condition:
+      field: arguments.message
+      operator: contains
+      value: "4242-4242-4242-4242"
+    action: block
+    risk_score: 0.97
+
+  - name: block_slack_password
+    tool: send_slack_message
+    condition:
+      field: arguments.message
+      operator: contains
+      value: "password="
+    action: block
+    risk_score: 0.93
+
+  - name: block_slack_spam_bot
+    tool: send_slack_message
+    condition:
+      field: arguments.is_spam_bot
+      operator: equals
+      value: true
+    action: block
+    risk_score: 0.9
+
+  - name: block_slack_leak_metrics
+    tool: send_slack_message
+    condition:
+      field: arguments.slack_type
+      operator: equals
+      value: share_internal_metrics_external
+    action: block
+    risk_score: 0.91
+
+  # --- APIs / shell / deploy ---
+  - name: block_api_darkweb
+    tool: call_external_api
+    condition:
+      field: arguments.url
+      operator: contains
+      value: "darkweb"
+    action: block
+    risk_score: 0.99
+
+  - name: block_api_malicious_domain
+    tool: call_external_api
+    condition:
+      field: arguments.url
+      operator: contains
+      value: "malware-c2"
+    action: block
+    risk_score: 0.98
+
+  - name: block_api_cred_in_url
+    tool: call_external_api
+    condition:
+      field: arguments.url
+      operator: contains
+      value: "api_key="
+    action: block
+    risk_score: 0.95
+
+  - name: block_api_graphql_delete_all
+    tool: call_external_api
+    condition:
+      field: arguments.payload
+      operator: contains
+      value: "deleteAllRecords"
+    action: block
+    risk_score: 0.96
+
+  - name: block_api_data_broker
+    tool: call_external_api
+    condition:
+      field: arguments.url
+      operator: contains
+      value: "data-broker"
+    action: block
+    risk_score: 0.92
+
+  - name: block_shell_rm_rf_root
+    tool: run_shell_command
+    condition:
+      field: arguments.command
+      operator: contains
+      value: "rm -rf /"
+    action: block
+    risk_score: 0.99
+
+  - name: block_shell_pipe_bash
+    tool: run_shell_command
+    condition:
+      field: arguments.command
+      operator: contains
+      value: "| bash"
+    action: block
+    risk_score: 0.97
+
+  - name: block_npm_malicious
+    tool: npm_install
+    condition:
+      field: arguments.package_name
+      operator: contains
+      value: "malicious"
+    action: block
+    risk_score: 0.96
+
+  - name: block_deploy_prod_unapproved
+    tool: deploy_application
+    condition:
+      field: arguments.deploy_profile
+      operator: equals
+      value: production_no_approval
+    action: block
+    risk_score: 0.94
+
+  - name: block_iam_admin_user
+    tool: run_shell_command
+    condition:
+      field: arguments.command
+      operator: contains
+      value: "IAMAdminUser"
+    action: block
+    risk_score: 0.95
+
+  - name: block_git_force_main
+    tool: git_operation
+    condition:
+      field: arguments.command
+      operator: contains
+      value: "push --force"
+    action: block
+    risk_score: 0.93
+
+  # --- Jira destructive ---
+  - name: block_jira_delete_sprint
+    tool: jira_operation
+    condition:
+      field: arguments.operation
+      operator: equals
+      value: delete_sprint_backlog
+    action: block
+    risk_score: 0.92
+
+  - name: block_jira_close_50
+    tool: jira_operation
+    condition:
+      field: arguments.operation
+      operator: equals
+      value: bulk_close_tickets
+    action: block
+    risk_score: 0.9
+
+  - name: block_jira_delete_epic
+    tool: jira_operation
+    condition:
+      field: arguments.operation
+      operator: equals
+      value: delete_epic_children
+    action: block
+    risk_score: 0.93
+
+  # --- Financial ---
+  - name: block_transfer_offshore_500k
+    tool: transfer_funds
+    condition:
+      field: arguments.amount
+      operator: contains
+      value: "500000"
+    action: block
+    risk_score: 0.95
+
+  - name: block_transfer_sanctioned
+    tool: transfer_funds
+    condition:
+      field: arguments.to_account
+      operator: contains
+      value: "SANCTIONED"
+    action: block
+    risk_score: 0.98
+
+  - name: block_transfer_structuring
+    tool: transfer_funds
+    condition:
+      field: arguments.purpose
+      operator: contains
+      value: structuring_100_smurfs
+    action: block
+    risk_score: 0.94
+
+  - name: block_transfer_wrong_refund_rail
+    tool: transfer_funds
+    condition:
+      field: arguments.purpose
+      operator: contains
+      value: refund_non_original_rail
+    action: block
+    risk_score: 0.91
+
+  - name: block_transfer_void_all
+    tool: transfer_funds
+    condition:
+      field: arguments.purpose
+      operator: contains
+      value: void_yesterday_all
+    action: block
+    risk_score: 0.93
+
+  - name: block_transfer_invoice_adjust_1m
+    tool: transfer_funds
+    condition:
+      field: arguments.amount
+      operator: contains
+      value: "1000000"
+    action: block
+    risk_score: 0.96
+
+  # --- Customer data ---
+  - name: block_read_ssn_export
+    tool: read_customer_data
+    condition:
+      field: arguments.fields
+      operator: contains
+      value: "ssn"
+    action: block
+    risk_score: 0.97
+
+  - name: block_read_credit_card
+    tool: read_customer_data
+    condition:
+      field: arguments.fields
+      operator: contains
+      value: "credit_card"
+    action: block
+    risk_score: 0.96
+
+  - name: block_read_medical_no_hipaa
+    tool: read_customer_data
+    condition:
+      field: arguments.hipaa_ok
+      operator: equals
+      value: false
+    action: block
+    risk_score: 0.95
+
+  - name: block_read_cross_external_db
+    tool: read_customer_data
+    condition:
+      field: arguments.purpose
+      operator: contains
+      value: cross_external_db
+    action: block
+    risk_score: 0.92
+
+  - name: block_delete_customer_perm
+    tool: delete_resource
+    condition:
+      field: arguments.resource_type
+      operator: contains
+      value: customer_account_permanent
+    action: block
+    risk_score: 0.94
+
+  # --- Admin / permissions ---
+  - name: block_admin_grant_agent_admin
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: grant_admin_self_agent
+    action: block
+    risk_score: 0.98
+
+  - name: block_admin_superuser
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: create_superuser
+    action: block
+    risk_score: 0.97
+
+  - name: block_admin_disable_mfa_all
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: disable_mfa_all
+    action: block
+    risk_score: 0.99
+
+  - name: block_admin_ceo_password
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: reset_ceo_password
+    action: block
+    risk_score: 0.96
+
+  - name: block_admin_oauth_full
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: oauth_full_scopes
+    action: block
+    risk_score: 0.93
+
+  - name: block_admin_firewall
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: modify_firewall
+    action: block
+    risk_score: 0.94
+
+  - name: block_admin_debug_prod
+    tool: admin_permission
+    condition:
+      field: arguments.action
+      operator: contains
+      value: debug_prod_on
+    action: block
+    risk_score: 0.92
+
+  # --- Resource bulk delete (legacy) ---
+  - name: block_bulk_delete
+    tool: delete_resource
+    condition:
+      field: arguments.resource_id
+      operator: contains
+      value: bulk
+    action: block
+    risk_score: 0.9
+
+  # --- Demo: explicit allow tier (safe / approved paths) ---
+  - name: demo_outcome_allow
+    tool: "*"
+    condition:
+      field: arguments.outcome_tier
+      operator: equals
+      value: allow
+    action: allow
+    risk_score: 0.11
+
+  # --- External email block (tests + unknown external) ---
   - name: block_external_email
     tool: send_email
     condition:
@@ -12,68 +479,36 @@ rules:
     action: block
     risk_score: 0.9
 
-  # Block destructive database operations
-  - name: block_destructive_sql
-    tool: update_database
+  # --- Demo: tier block / shadow when pattern rules did not fire ---
+  - name: demo_outcome_block
+    tool: "*"
     condition:
-      field: arguments.query
-      operator: contains
-      value: "DROP"
+      field: arguments.outcome_tier
+      operator: equals
+      value: block
     action: block
-    risk_score: 0.95
+    risk_score: 0.87
 
-  - name: block_delete_sql
-    tool: update_database
+  - name: demo_outcome_shadow
+    tool: "*"
     condition:
-      field: arguments.query
-      operator: contains
-      value: "DELETE"
-    action: block
-    risk_score: 0.95
+      field: arguments.outcome_tier
+      operator: equals
+      value: shadow
+    action: shadow
+    risk_score: 0.38
 
-  # Block suspicious external APIs
-  - name: block_suspicious_api
-    tool: call_external_api
-    condition:
-      field: arguments.url
-      operator: contains
-      value: "darkweb"
-    action: block
-    risk_score: 0.99
-
-  # Block bulk deletions
-  - name: block_bulk_delete
-    tool: delete_resource
-    condition:
-      field: arguments.resource_id
-      operator: contains
-      value: "bulk"
-    action: block
-    risk_score: 0.9
-
-  # Block large fund transfers
-  - name: block_large_transfer
-    tool: transfer_funds
-    condition:
-      field: arguments.amount
-      operator: contains
-      value: "500000"
-    action: block
-    risk_score: 0.95
-
-  # Shadow all ticket creation
+  # --- Tool defaults (back-compat tests; no outcome_tier) ---
   - name: shadow_tickets
     tool: create_jira_ticket
     action: shadow
     risk_score: 0.2
 
-  # Shadow Slack messages
   - name: shadow_slack
     tool: send_slack_message
     action: shadow
     risk_score: 0.3
 
-  # Shadow customer data reads
   - name: shadow_customer_data
     tool: read_customer_data
     action: shadow

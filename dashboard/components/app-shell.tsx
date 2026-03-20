@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 
 import { Sidebar } from "@/components/sidebar";
+import { ShieldChatPanel } from "@/components/shield-chat";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -15,7 +16,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-[#0d1117] p-8">{children}</main>
+      <main className="min-w-0 flex-1 overflow-y-auto bg-[#0d1117] p-4 sm:p-8">{children}</main>
+      <ShieldChatPanel />
     </div>
   );
 }

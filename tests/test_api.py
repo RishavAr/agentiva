@@ -26,6 +26,37 @@ def test_health_endpoint() -> None:
         assert body["mode"] in {"shadow", "live", "approval"}
 
 
+def test_chat_endpoint() -> None:
+    with _new_client() as client:
+        _reset_runtime_state()
+        client.post(
+            "/api/v1/intercept",
+            json={
+                "tool_name": "send_email",
+                "arguments": {"to": "x@evil.com", "subject": "t"},
+                "agent_id": "a1",
+            },
+        )
+        response = client.post("/api/v1/chat", json={"message": "give me a summary"})
+        assert response.status_code == 200
+        body = response.json()
+        assert "answer" in body
+        assert "data" in body
+        assert "follow_up_suggestions" in body
+        assert isinstance(body["follow_up_suggestions"], list)
+        assert body.get("mode") == "basic"
+
+
+def test_chat_capabilities_endpoint() -> None:
+    with _new_client() as client:
+        response = client.get("/api/v1/chat/capabilities")
+        assert response.status_code == 200
+        body = response.json()
+        assert "llm_enabled" in body
+        assert body["llm_enabled"] in (True, False)
+        assert "provider" in body
+
+
 def test_intercept_valid_input() -> None:
     with _new_client() as client:
         _reset_runtime_state()
