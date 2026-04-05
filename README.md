@@ -356,4 +356,4 @@ For day-to-day development, keep the hook or adjust scan configuration as your t
 
 [GitHub](https://github.com/RishavAr) · [Twitter](https://twitter.com/RISHAVA28874444) · [LinkedIn](https://linkedin.com/in/rishav-aryan)
 
-Repository: [github.com/RishavAr/agentshield](https://github.com/RishavAr/agentshield)
+Repository: [github.com/RishavAr/agentshield](https://github.com/RishavAr/agentiva)
