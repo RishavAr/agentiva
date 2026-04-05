@@ -1,209 +1,343 @@
 # Agentiva
 
-**Preview deployments for AI agents.**
-
-See what your AI agent would do before it does it.
+**Runtime safety for AI agents.** Intercept tool calls, score risk against policy, log everything to an audit trail, and ship with shadow mode before you enforce blocks.
 
 [![Tests](https://img.shields.io/badge/tests-24%2C599%20passing-brightgreen)]()
 [![OWASP](https://img.shields.io/badge/OWASP%20LLM%20Top%2010-100%25-brightgreen)]()
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)]()
 
-> litellm was compromised March 24, 2026 — SSH keys, AWS credentials, and database passwords stolen from 97M monthly downloads.
-> Agentiva catches this class of attack at the action layer.
+---
 
-## Quick start (2 minutes)
+## Table of contents
+
+- [Why Agentiva](#why-agentiva)
+- [What you get](#what-you-get)
+- [Prerequisites](#prerequisites)
+- [Install](#install)
+- [End-to-end local setup](#end-to-end-local-setup)
+- [CLI reference](#cli-reference)
+- [Wire Agentiva into your agent](#wire-agentiva-into-your-agent)
+- [Policies and environment](#policies-and-environment)
+- [Docker Compose](#docker-compose)
+- [Marketing site (`website/`)](#marketing-site-website)
+- [Dashboard](#dashboard)
+- [API](#api)
+- [Tests and benchmarks](#tests-and-benchmarks)
+- [Git pre-push scan](#git-pre-push-scan)
+- [Architecture](#architecture)
+- [Troubleshooting](#troubleshooting)
+- [Contributing and license](#contributing-and-license)
+
+---
+
+## Why Agentiva
+
+Agents call real tools: email, databases, shells, payments. Agentiva sits **in front of those calls**, applies **YAML policies** and a **risk scorer**, supports **shadow / live / approval** style modes, and persists **audit evidence** you can export for compliance workflows.
+
+It is **self-hostable**, open source (Apache 2.0), and integrates with common stacks (LangChain, CrewAI, OpenAI-style tools, Anthropic, MCP, or plain HTTP).
+
+---
+
+## What you get
+
+| Capability | Description |
+|------------|-------------|
+| **Intercept** | Score and allow / shadow / block (or hand off to approval) before side effects run |
+| **Policy engine** | Declarative rules in YAML; tune for your org |
+| **Audit log** | Searchable history, agent registry, compliance-oriented exports in the dashboard |
+| **Security co-pilot** | Chat over your logs; optional LLM via OpenRouter |
+| **Project scanner** | `agentiva scan` for risky patterns in repos (optional git hook on `agentiva init`) |
+| **MCP proxy** | Route MCP traffic through interception |
+
+---
+
+## Prerequisites
+
+| Component | Version / notes |
+|-----------|-----------------|
+| **Python** | 3.10+ (3.11 used in Docker image) |
+| **Node.js** | Current LTS recommended for the Next.js dashboard |
+| **Git** | For clone and optional pre-push hook |
+| **Docker** (optional) | Docker Compose for full stack + Postgres + Redis |
+
+---
+
+## Install
+
+### From PyPI (runtime only)
 
 ```bash
 pip install agentiva
 agentiva serve --port 8000
-# Open localhost:3000 for the dashboard (from repo: cd dashboard && npm run dev)
 ```
 
-## Protect your agent (3 lines)
+OpenAPI docs: `http://127.0.0.1:8000/docs`.
+
+### From source (recommended for development)
+
+```bash
+git clone https://github.com/RishavAr/agentshield.git
+cd agentshield
+
+python3 -m venv venv
+source venv/bin/activate          # Windows: venv\Scripts\activate
+pip install --upgrade pip
+pip install -e .
+```
+
+This installs the `agentiva` CLI and pulls dependencies from `requirements.txt` (via `pyproject.toml`).
+
+---
+
+## End-to-end local setup
+
+Agentiva is two moving parts in development:
+
+1. **Python API** (FastAPI) — default `http://127.0.0.1:8000`
+2. **Next.js dashboard** — dev server on **`http://127.0.0.1:3001`** (proxies `/api/v1/*` to the API)
+
+### Option A — one script (from repo root)
+
+```bash
+./scripts/dev-stack.sh
+```
+
+- Creates or updates `dashboard/.env.local` with `AGENTIVA_API_URL=http://127.0.0.1:8000` (or the port you set with `AGENTIVA_PORT`).
+- Starts the API, then `npm run dev` in `dashboard/`.
+
+### Option B — two terminals
+
+**Terminal 1 — API**
+
+```bash
+source venv/bin/activate
+agentiva serve --port 8000
+# or: python -m agentiva.cli serve --port 8000
+```
+
+**Terminal 2 — dashboard**
+
+```bash
+cd dashboard
+cp env.local.template .env.local   # first time only; edit AGENTIVA_API_URL if needed
+npm install                         # first time only
+npm run dev
+```
+
+Open **`http://127.0.0.1:3001`** in the browser. The dev server binds to `127.0.0.1` by default to avoid common VPN/Docker hostname issues on macOS.
+
+### Optional: free stuck ports then serve API only
+
+```bash
+./scripts/serve-fresh.sh    # clears listeners on 8000 and 3001, then agentiva serve --port 8000
+```
+
+---
+
+## CLI reference
+
+| Command | Purpose |
+|---------|---------|
+| `agentiva serve [--port 8000] [--host 0.0.0.0] [--mode shadow\|live\|approval]` | Start the FastAPI server |
+| `agentiva scan [DIR]` | Static scan of a project tree (reports under `.agentiva/`) |
+| `agentiva dashboard [DIR]` | Open the last scan report in HTML |
+| `agentiva init` | Install git pre-push hook that runs `agentiva scan` |
+| `agentiva init-policy [--output policies/default.yaml]` | Copy default policy YAML into your tree |
+| `agentiva mcp-proxy --upstream HOST:PORT --port 3002` | MCP proxy with interception |
+| `agentiva demo` | Run packaged demo scenarios |
+| `agentiva test` | Run pytest wrapper (see [Tests](#tests-and-benchmarks)) |
+
+---
+
+## Wire Agentiva into your agent
+
+Minimal pattern (shadow mode observes without blocking side effects — behavior depends on mode and policy):
 
 ```python
 from agentiva import Agentiva
 
 shield = Agentiva(mode="shadow")
-tools = shield.protect([your_existing_tools])
+tools = shield.protect([your_tool_a, your_tool_b])
 
-# Your agent works exactly the same.
-# Every action is intercepted, scored, and logged.
+# Pass `tools` into LangChain, CrewAI, or your own executor unchanged.
 ```
 
-## Run the demo
+**HTTP interception** — POST tool intent to the API (see OpenAPI `POST /api/v1/intercept`) for custom runtimes.
+
+**MCP** — point clients at `agentiva mcp-proxy` and configure upstream per CLI help.
+
+---
+
+## Policies and environment
+
+- Default policy file in-repo: `policies/default.yaml`. Packaged copy: `agentiva/policies/default.yaml` (used when installed as a wheel).
+- Docker Compose sets (see `docker-compose.yml`):
+
+  | Variable | Role |
+  |----------|------|
+  | `AGENTIVA_DATABASE_URL` | DB connection (default SQLite in compose example) |
+  | `AGENTIVA_POLICY_PATH` | Path to policy YAML |
+  | `AGENTIVA_MODE` | e.g. `shadow` |
+  | `AGENTIVA_RATE_LIMIT_PER_MINUTE` | Rate limit |
+  | `AGENTIVA_HOST` / `AGENTIVA_PORT` | Bind address / port |
+
+Use a local `.env` for secrets; do not commit real credentials (see `.gitignore`).
+
+---
+
+## Docker Compose
+
+Full stack with API, dashboard image, Postgres, and Redis:
 
 ```bash
-# See 4 real incident recreations
-python demo/real_incidents_demo.py
-
-# See PayBot (fintech startup) demo
-python demo/paybot_demo.py
-
-# See proof: before vs after comparison
-python demo/proof_demo.py
+cp .env.example .env    # if present; configure secrets for production
+docker compose up --build
 ```
 
-Or use the project venv so dependencies resolve: `source .venv/bin/activate` then the commands above.
+- API: mapped host port from `AGENTIVA_PORT` (default **8000**).
+- Dashboard container: **`http://localhost:3000`** in the compose file (`NEXT_PUBLIC_API_BASE` points at the backend service).
 
-## What it catches
+Paths and env names match `docker-compose.yml` in this repo.
 
-Tested against real-world incidents:
+---
 
-- **litellm supply chain attack** (March 2026) — credential exfiltration blocked
-- **Amazon Kiro** (December 2025) — infrastructure destruction blocked
-- **Microsoft Copilot** (January 2026) — zero-click data theft blocked
-- **Replit agent** (2026) — mass record deletion blocked
+## Marketing site (`website/`)
 
-## Verified results
-
-| Benchmark | Result |
-|-----------|--------|
-| Agentiva test suite | 24,599 tests passing |
-| OWASP LLM Top 10 | 21/21 (100%) |
-| DeepTeam (Confident AI) | 38/47 (80.85%) |
-| Garak (NVIDIA) | 2,500 probes scanned |
-| PyRIT (Microsoft) | 9/9 scenarios completed |
-
-Run benchmarks yourself:
+Static landing page (demo embed, pricing, install walkthrough). Deploy with any static host; many teams use [Vercel](https://vercel.com):
 
 ```bash
-python -m pytest tests/ -m "slow or not slow"  # Full test suite
-python benchmarks/run_benchmark.py              # OWASP + incidents
-python benchmarks/run_all_benchmarks.py         # All frameworks
+cd website
+npx vercel --prod
 ```
 
-## Five operating modes
-
-| Mode | What it does |
-|------|--------------|
-| Shadow | Observe without executing |
-| Simulation | Preview impact before acting |
-| Approval | Human-in-the-loop for risky actions |
-| Negotiation | Agent learns to self-correct |
-| Rollback | Undo what the agent did |
+---
 
 ## Dashboard
 
-Real-time monitoring at localhost:3000:
+When the Next app is running in **development**:
 
-- **Overview** — stats, charts, recent activity
-- **Live Feed** — actions streaming via WebSocket
-- **Audit Log** — searchable history with compliance exports
-- **Agents** — registry with reputation and kill switch
-- **Policies** — YAML rule editor
-- **Security Co-pilot** — ask questions about your agent's behavior
+| Area | Purpose |
+|------|---------|
+| Overview | High-level stats and activity |
+| Live | Real-time action feed (WebSocket) |
+| Audit | Searchable log, filters, exports |
+| Agents | Registry and controls |
+| Policies | Policy editing workflow |
+| Chat / co-pilot | Ask questions over your data |
 
-## Security co-pilot
+**Optional LLM:** set `OPENROUTER_API_KEY` where your server or dashboard expects it for richer co-pilot answers (OpenRouter).
 
-Ask naturally:
+---
 
-- "What was blocked?" → real data from your audit log
-- "Why was send_email blocked?" → specific tool analysis
-- "Is this HIPAA compliant?" → compliance check with regulation citations
-- "Is my agent safe for production?" → honest assessment
+## API
 
-Basic mode works without any API key. Add `OPENROUTER_API_KEY` for Claude-powered deep analysis via OpenRouter.
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health, mode, threshold hints |
+| `/api/v1/intercept` | POST | Evaluate a tool call |
+| `/api/v1/audit` | GET | Query audit log |
+| `/api/v1/report` | GET | Summary report |
+| `/api/v1/settings` | PUT | Runtime settings |
+| `/ws/actions` | WebSocket | Live action stream |
 
-## Works with
+Interactive docs: **`http://127.0.0.1:8000/docs`** after `agentiva serve`.
 
-LangChain, CrewAI, OpenAI Agents SDK, Anthropic, MCP Protocol, or any custom agent via REST API.
+---
 
-## Compliance-ready evidence
+## Tests and benchmarks
 
-Generates audit trails aligned with:
+```bash
+source venv/bin/activate
+python -m pytest tests/ -q
+```
 
-- **HIPAA** — PHI access logs per 45 CFR § 164.312
-- **SOC2** — Evidence for CC6-CC8 controls
-- **PCI-DSS** — Cardholder data monitoring per Req 3, 7, 10
+Full suite including slower markers:
 
-Note: Agentiva helps prepare for compliance audits. Certification requires a third-party assessor.
+```bash
+python -m pytest tests/ -m "slow or not slow" -q
+```
 
-## Pricing
+Benchmark-style runners (see `benchmarks/`):
 
-| Tier | Price | Agents |
-|------|-------|--------|
-| Free | $0/forever | 1 agent |
-| Pro | $18/month | Up to 3 |
-| Team | $54/month | Unlimited |
-| Enterprise | Custom | Custom |
+```bash
+python benchmarks/run_benchmark.py
+python benchmarks/run_all_benchmarks.py
+```
 
-Self-hosted is free forever. Cloud dashboard on waitlist.
+### Reported verification highlights
+
+| Area | Note |
+|------|------|
+| Test suite | Large automated suite covering attacks, compliance scenarios, and integrations |
+| OWASP LLM Top 10 | Category coverage in project tests |
+| DeepTeam, Garak, PyRIT | Third-party style assessments documented in `benchmarks/` |
+
+---
+
+## Git pre-push scan
+
+If you run `agentiva init`, a **pre-push** hook runs `agentiva scan .`. If the scan exits non-zero (e.g. BLOCK findings in demos or tests), `git push` is blocked. To push anyway when you accept the risk:
+
+```bash
+git push --no-verify
+```
+
+For day-to-day development, keep the hook or adjust scan configuration as your team prefers.
+
+---
 
 ## Architecture
 
 ```
 ┌────────────────────┐
-│  AI Agent          │  LangChain · CrewAI · OpenAI · MCP · custom tools
+│  Your agent        │  LangChain · CrewAI · OpenAI · Anthropic · MCP · custom
 └─────────┬──────────┘
-          │ tool_call
+          │ tool calls
           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                        AGENTIVA API (FastAPI)                        │
-│  /api/v1/intercept · /api/v1/audit · /api/v1/chat · WebSocket feed   │
-└───────────────────────────────┬─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Agentiva API (FastAPI)                                                  │
+│  /api/v1/intercept · audit · chat · WebSocket feed · OpenAPI /docs       │
+└───────────────────────────────┬─────────────────────────────────────────┘
                                 │
           ┌─────────────────────┴─────────────────────┐
           ▼                                           ▼
 ┌──────────────────────┐                 ┌──────────────────────┐
-│  Interceptor         │                 │  Shield Chat          │
-│  PolicyEngine (YAML) │                 │  Sessions + messages  │
-│  SmartRiskScorer     │                 │  (SQLite persistence) │
-│  PHI detector        │                 │  + optional LLM layer │
-│  Behavior / drift    │                 └──────────┬────────────┘
-└──────────┬───────────┘                            │
+│  Policy + scoring    │                 │  Shield chat /       │
+│  YAML · risk · PHI   │                 │  sessions (SQLite)   │
+└──────────┬───────────┘                 └──────────┬───────────┘
            │                                        │
            ▼                                        ▼
-┌──────────────────────┐                 ┌──────────────────────┐
-│  Modes               │                 │  Compliance KB        │
-│  Shadow · Approve ·  │                 │  HIPAA · SOC 2 ·      │
-│  Live · Negotiation  │                 │  PCI-DSS citations +  │
-│  Simulator · Rollback│                 │  evidence SQL hooks   │
-└──────────┬───────────┘                 └──────────────────────┘
-           │
-           ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│  Persistence: action_logs (audit) · agent registry · approvals ·     │
-│  chat_sessions / chat_messages                                       │
-└─────────────────────────────────────────────────────────────────────┘
-           │
-           ▼
-┌──────────────────────┐
-│  Tools / APIs        │  Email · DB · Slack · shell · payments…
-└──────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Persistence: action logs, registry, approvals, chat                    │
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## API reference (short)
+---
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check + mode + risk threshold |
-| `/api/v1/intercept` | POST | Intercept an agent action |
-| `/api/v1/audit` | GET | Query audit log |
-| `/api/v1/report` | GET | Summary report |
-| `/api/v1/settings` | PUT | Runtime mode + risk threshold |
-| `/ws/actions` | WebSocket | Real-time action stream |
+## Troubleshooting
 
-Full OpenAPI at `http://localhost:8000/docs`.
+| Issue | What to try |
+|-------|-------------|
+| Dashboard cannot reach API | Check `dashboard/.env.local` → `AGENTIVA_API_URL` matches `agentiva serve` port |
+| Blank page or connection error on `localhost` | Use **`http://127.0.0.1:3001`** (dev server hostname) |
+| Port 8000 or 3001 in use | Stop other processes or run `./scripts/serve-fresh.sh` for API |
+| `agentiva: command not found` | Activate `venv` and `pip install -e .` |
+| Push rejected by hook | Fix scan findings or `git push --no-verify` |
 
-## Testing
+---
 
-```bash
-python -m pytest tests/ -q
-python -m pytest tests/ -m "slow or not slow" -q
-```
+## Contributing and license
 
-## Contributing
+- **Contributing:** see [CONTRIBUTING.md](CONTRIBUTING.md).
+- **License:** Apache 2.0 — [LICENSE](LICENSE).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## License
-
-Apache 2.0 — see [LICENSE](LICENSE).
+---
 
 ## Built by
 
-**[Rishav Aryan](https://rishavar.github.io)** — ML Engineer, George Mason University
+**Rishav Aryan** — ML Engineer, George Mason University
 
-[GitHub](https://github.com/RishavAr) · [Twitter](https://twitter.com/RishavAr)
+[GitHub](https://github.com/RishavAr) · [Twitter](https://twitter.com/RISHAVA28874444) · [LinkedIn](https://linkedin.com/in/rishav-aryan)
+
+Repository: [github.com/RishavAr/agentshield](https://github.com/RishavAr/agentshield)
