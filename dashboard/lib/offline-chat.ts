@@ -21,8 +21,8 @@ function overviewAnswer(payload: OfflineDemoPayload | null): string {
     `- Total actions: **${report.total_actions}**\n` +
     `- Decisions: ${byDec || "—"}\n` +
     `- Average risk: **${report.avg_risk_score.toFixed(2)}**\n` +
-    `- Demo agent **demo-agent-1** with **${audit.length}** sample intercepts\n\n` +
-    `This is **offline** mode — answers are generated from the sample data only. Connect the API for full chat history and LLM-powered replies (optional **OPENROUTER_API_KEY** on the server).`
+    `- Agent **demo-agent-1** · **${audit.length}** sample intercepts\n\n` +
+    "Answers here use this sample only. Run **agentiva serve** (and optionally set **OPENROUTER_API_KEY** on the server) for live audit, saved chat history, and LLM replies."
   );
 }
 
@@ -38,11 +38,17 @@ export function offlineCoPilotReply(message: string, payload: OfflineDemoPayload
   }
 
   if (/^(hi|hello|hey|howdy)\b|^good (morning|afternoon|evening)/.test(q)) {
+    if (audit.length) {
+      return {
+        answer:
+          `Hi — I'm the **Security co-pilot** (browser demo, no API). You have **${audit.length}** sample actions loaded. Use the chips below for a full **session overview** or **what was blocked**.`,
+        suggestions: ["Session overview", "What was blocked?"],
+      };
+    }
     return {
       answer:
-        `Hi — I'm the **Security co-pilot** in **offline demo** mode.\n\n` +
-        (audit.length ? overviewAnswer(payload) : "Load sample data from the welcome screen, then ask about blocks, risk, or shadow mode."),
-      suggestions: ["Session overview", "What was blocked?"],
+        "Hi — I'm the **Security co-pilot**. On the welcome page, run **Run demo with sample data**, then come back here to ask about blocks, risk, or shadow mode.",
+      suggestions: ["Session overview"],
     };
   }
 
@@ -109,10 +115,15 @@ export function offlineCoPilotReply(message: string, payload: OfflineDemoPayload
     };
   }
 
+  if (audit.length) {
+    return {
+      answer:
+        `I answer from your **${audit.length}** sample actions. Try **session overview**, **what was blocked**, **shadow mode**, or **risk threshold** — or tap a suggestion below.`,
+      suggestions: ["Session overview", "What was blocked?", "Explain shadow mode"],
+    };
+  }
   return {
-    answer:
-      overviewAnswer(payload) +
-      `\n\nTry asking: **what was blocked?**, **session overview**, **shadow mode**, or **risk threshold**.`,
-    suggestions: ["Session overview", "What was blocked?", "Explain shadow mode"],
+    answer: overviewAnswer(null),
+    suggestions: ["Session overview", "What was blocked?"],
   };
 }
