@@ -20,6 +20,12 @@ import {
 import { PageHeader } from "@/components/page-header";
 import { toast } from "@/components/toast-host";
 import { getHttpApiBase, getWsBase } from "@/lib/api-base";
+import {
+  clearOfflineDemo,
+  isOfflineDemoActive,
+  readOfflineDemoPayload,
+  seedOfflineDemo,
+} from "@/lib/offline-demo";
 
 type AuditEntry = {
   action_id: string;
@@ -167,10 +173,42 @@ export default function DashboardOverviewPage() {
   const [streamState, setStreamState] = useState<"connecting" | "live" | "offline">("connecting");
   const [flashActionId, setFlashActionId] = useState<string | null>(null);
   const flashClearRef = useRef<number | null>(null);
+  const [usingOfflineDemo, setUsingOfflineDemo] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      if (typeof window !== "undefined") {
+        const offline = readOfflineDemoPayload();
+        if (offline) {
+          setUsingOfflineDemo(true);
+          const sorted = [...offline.audit].sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          );
+          setReport(offline.report);
+          setRecentActions(sorted.slice(0, 10));
+          setSeriesSource(sorted);
+          setMode(offline.health.mode);
+          setModeSetting(offline.health.mode);
+          setRiskThreshold(offline.health.risk_threshold);
+          setAgents(
+            offline.agents.map((a) => ({
+              id: a.id,
+              name: a.name,
+              reputation_score: a.reputation_score,
+              total_actions: a.total_actions,
+              blocked_actions: a.blocked_actions,
+              status: a.status,
+              last_active: a.last_active ?? null,
+            })),
+          );
+          setAgentSummaries(offline.summaries);
+          setError("");
+          setLoading(false);
+          return;
+        }
+      }
+      setUsingOfflineDemo(false);
       const [reportRes, auditRes, seriesRes, agentsRes, summaryRes, healthRes] = await Promise.all([
         fetch(`${API_BASE}/api/v1/report`),
         fetch(`${API_BASE}/api/v1/audit?limit=10`),
@@ -225,6 +263,10 @@ export default function DashboardOverviewPage() {
   }, [recentActions.length]);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && isOfflineDemoActive()) {
+      setStreamState("offline");
+      return () => {};
+    }
     const ws = new WebSocket(`${WS_BASE}/ws/actions`);
     setStreamState("connecting");
     ws.onopen = () => setStreamState("live");
@@ -291,6 +333,10 @@ export default function DashboardOverviewPage() {
   }, [mode]);
 
   async function toggleMode() {
+    if (isOfflineDemoActive()) {
+      toast("Connect the Agentiva API to change runtime mode.", "info");
+      return;
+    }
     const response = await fetch(`${API_BASE}/api/v1/mode/${nextMode}`, { method: "POST" });
     if (response.ok) {
       setMode(nextMode);
@@ -300,6 +346,10 @@ export default function DashboardOverviewPage() {
   }
 
   async function applySecuritySettings() {
+    if (isOfflineDemoActive()) {
+      toast("Connect the Agentiva API to apply security settings.", "info");
+      return;
+    }
     try {
       const r = await fetch(`${API_BASE}/api/v1/settings`, {
         method: "PUT",
@@ -346,12 +396,19 @@ export default function DashboardOverviewPage() {
   async function runDemoSeed() {
     try {
       const r = await fetch(`${API_BASE}/api/v1/demo/seed`, { method: "POST" });
-      if (!r.ok) throw new Error((await r.text()) || "Demo seed failed");
+      if (r.ok) {
+        clearOfflineDemo();
+        await loadData();
+        toast("Fresh demo loaded — overview shows only this demo run.", "success");
+        return;
+      }
+      seedOfflineDemo();
       await loadData();
-      toast("Fresh demo loaded — overview shows only this demo run.", "success");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Demo failed");
-      toast(err instanceof Error ? err.message : "Demo failed", "error");
+      toast("Sample data loaded in your browser (API unreachable).", "success");
+    } catch {
+      seedOfflineDemo();
+      await loadData();
+      toast("Sample data loaded in your browser (API unreachable).", "success");
     }
   }
 
@@ -361,6 +418,13 @@ export default function DashboardOverviewPage() {
         "Clear all audit log data from memory and the database? Registered agents and policies stay as-is. This cannot be undone.",
       )
     ) {
+      return;
+    }
+    if (isOfflineDemoActive()) {
+      clearOfflineDemo();
+      setUsingOfflineDemo(false);
+      await loadData();
+      toast("Sample data cleared.", "success");
       return;
     }
     try {
@@ -443,6 +507,26 @@ export default function DashboardOverviewPage() {
           </div>
         }
       />
+
+      {usingOfflineDemo ? (
+        <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <strong>Browser-only sample data</strong> — the hosted app cannot reach your machine&apos;s API. Run{" "}
+          <code className="rounded bg-black/30 px-1 py-0.5 text-xs text-amber-50">agentiva serve</code> and{" "}
+          <code className="rounded bg-black/30 px-1 py-0.5 text-xs text-amber-50">npm run dev</code> in{" "}
+          <code className="rounded bg-black/30 px-1 py-0.5 text-xs text-amber-50">dashboard/</code> for a live demo.{" "}
+          <button
+            type="button"
+            className="font-semibold text-[#fde68a] underline decoration-amber-500/60 underline-offset-2 hover:text-white"
+            onClick={() => {
+              clearOfflineDemo();
+              setUsingOfflineDemo(false);
+              void loadData();
+            }}
+          >
+            Clear sample data
+          </button>
+        </div>
+      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">{error}</div>

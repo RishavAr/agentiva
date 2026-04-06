@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Loader2, Shield } from "lucide-react";
 
 import { getHttpApiBase } from "@/lib/api-base";
+import { clearOfflineDemo, seedOfflineDemo } from "@/lib/offline-demo";
 import { toast } from "@/components/toast-host";
 
 const API_BASE = getHttpApiBase();
@@ -73,12 +74,28 @@ export default function OnboardingPage() {
     setSubmitting(true);
     try {
       const r = await fetch(`${API_BASE}/api/v1/demo/seed`, { method: "POST" });
-      if (!r.ok) throw new Error(await r.text());
-      toast("Fresh demo loaded — the dashboard now shows only this demo run.", "success");
+      if (r.ok) {
+        clearOfflineDemo();
+        toast("Fresh demo loaded — the dashboard now shows only this demo run.", "success");
+        router.push("/dashboard");
+        router.refresh();
+        return;
+      }
+      seedOfflineDemo();
+      toast(
+        "Loaded sample data in your browser (no Agentiva API). Charts and audit match this demo; connect `agentiva serve` for a live API.",
+        "success",
+      );
       router.push("/dashboard");
       router.refresh();
-    } catch (err) {
-      toast(err instanceof Error ? err.message : "Demo failed", "error");
+    } catch {
+      seedOfflineDemo();
+      toast(
+        "Loaded sample data in your browser (no Agentiva API). Connect the API locally for a full live demo.",
+        "success",
+      );
+      router.push("/dashboard");
+      router.refresh();
     } finally {
       setSubmitting(false);
     }

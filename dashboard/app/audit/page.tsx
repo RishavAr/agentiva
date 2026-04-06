@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/page-header";
 import { getHttpApiBase } from "@/lib/api-base";
+import { filterOfflineAudit, isOfflineDemoActive, readOfflineDemoPayload } from "@/lib/offline-demo";
 import { toast } from "@/components/toast-host";
 
 type AuditEntry = {
@@ -101,6 +102,11 @@ function AuditLogContent() {
 
   useEffect(() => {
     void (async () => {
+      const offline = readOfflineDemoPayload();
+      if (offline) {
+        setAgentOptions(offline.summaries);
+        return;
+      }
       try {
         const res = await fetch(`${API_BASE}/api/v1/audit/agents/summary`);
         if (res.ok) {
@@ -116,6 +122,19 @@ function AuditLogContent() {
   const loadAudit = useCallback(async () => {
     setLoading(true);
     try {
+      if (typeof window !== "undefined" && isOfflineDemoActive()) {
+        const payload = readOfflineDemoPayload();
+        if (payload) {
+          const sorted = [...payload.audit].sort(
+            (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+          );
+          const filtered = filterOfflineAudit(sorted, toolName, decision, minRisk, agentFilter);
+          setTotal(filtered.length);
+          const slice = filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
+          setRows(slice as AuditEntry[]);
+          return;
+        }
+      }
       const fp = buildFilterParams(toolName, decision, minRisk, agentFilter);
       const q = new URLSearchParams({
         limit: String(PAGE_SIZE),
@@ -232,12 +251,12 @@ function AuditLogContent() {
 
   return (
     <div className="page-enter space-y-6 pb-12">
-      <PageHeader title="Audit log" subtitle="Searchable history & compliance exports" breadcrumbs={[{ label: "Audit Log" }]} />
+      <PageHeader title="Audit log" subtitle="Searchable history & exportable audit data" breadcrumbs={[{ label: "Audit Log" }]} />
 
       <section className="glass-card p-5">
-        <h3 className="mb-1 text-sm font-semibold text-[#f0f6fc]">Compliance export</h3>
+        <h3 className="mb-1 text-sm font-semibold text-[#f0f6fc]">Audit log exports</h3>
         <p className="mb-4 text-xs text-[#8b949e]">
-          PDF reports from persisted <code className="text-[#fde047]">action_logs</code>. Optional date range.
+          PDF and JSON from persisted <code className="text-[#fde047]">action_logs</code> (framework-themed summaries). Optional date range. Your assessor makes compliance determinations—we supply the trail.
         </p>
         <div className="mb-4 flex flex-wrap items-end gap-3">
           <label className="flex flex-col gap-1 text-xs text-[#8b949e]">
@@ -281,7 +300,7 @@ function AuditLogContent() {
             </button>
           ))}
         </div>
-        <p className="mb-2 mt-4 text-xs font-medium text-[#8b949e]">JSON evidence (SOC2 / HIPAA / PCI)</p>
+        <p className="mb-2 mt-4 text-xs font-medium text-[#8b949e]">Structured JSON (SOC2 / HIPAA / PCI report styles)</p>
         <div className="flex flex-wrap gap-2">
           {(
             [

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { getHttpApiBase, getWsBase } from "@/lib/api-base";
+import { isOfflineDemoActive, readOfflineDemoPayload } from "@/lib/offline-demo";
 
 type ActionFeedItem = {
   action_id: string;
@@ -40,6 +41,7 @@ function borderForDecision(d: string) {
 
 export default function LiveFeedPage() {
   const [actions, setActions] = useState<ActionFeedItem[]>([]);
+  const [offlineSample, setOfflineSample] = useState(false);
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected" | "error" | "reconnecting">(
     "connecting",
   );
@@ -53,6 +55,19 @@ export default function LiveFeedPage() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && isOfflineDemoActive()) {
+      const payload = readOfflineDemoPayload();
+      if (payload) {
+        const sorted = [...payload.audit].sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        );
+        setActions(sorted);
+        setStatus("connected");
+        setOfflineSample(true);
+      }
+      return () => {};
+    }
+
     let cancelled = false;
 
     function scheduleReconnect() {
@@ -157,7 +172,9 @@ export default function LiveFeedPage() {
     <div className="page-enter space-y-6 pb-12">
       <PageHeader
         title="Live feed"
-        subtitle="Real-time WebSocket stream"
+        subtitle={
+          offlineSample ? "Sample actions (browser demo — no WebSocket)" : "Real-time WebSocket stream"
+        }
         breadcrumbs={[{ label: "Live Feed" }]}
       />
 

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { getHttpApiBase } from "@/lib/api-base";
+import { isOfflineDemoActive, readOfflineDemoPayload } from "@/lib/offline-demo";
 import { toast } from "@/components/toast-host";
 import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
 
@@ -78,6 +79,25 @@ export default function AgentsPage() {
   const loadAgents = useCallback(async () => {
     setLoading(true);
     try {
+      if (typeof window !== "undefined" && isOfflineDemoActive()) {
+        const payload = readOfflineDemoPayload();
+        if (payload) {
+          setAgents(
+            payload.agents.map((a) => ({
+              id: a.id,
+              name: a.name,
+              owner: a.owner,
+              reputation_score: a.reputation_score,
+              total_actions: a.total_actions,
+              blocked_actions: a.blocked_actions,
+              status: a.status,
+              last_active: a.last_active ?? null,
+              allowed_tools: a.allowed_tools,
+            })),
+          );
+          return;
+        }
+      }
       const response = await fetch(`${API_BASE}/api/v1/agents`);
       if (response.ok) {
         setAgents((await response.json()) as Agent[]);
