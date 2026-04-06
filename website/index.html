@@ -14,7 +14,7 @@
       content="See what your AI agent would do before it does it. Open-source. 24,599 tests passing."
     />
     <meta property="og:type" content="website" />
-    <!-- Product dashboard is the Next.js app in repo dashboard/ — runs locally or Docker, not on this static Vercel page. -->
+    <!-- Hosted product UI (welcome + onboarding): https://dashboard-puce-two.vercel.app — full live data needs your API (local or set AGENTIVA_API_URL on that Vercel project). -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -1757,9 +1757,11 @@
             <a href="#install" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.82rem">Get started free</a>
             <a
               class="nav-dashboard-link"
-              href="#dashboard"
-              title="Full audit UI runs on your machine (clone repo → dashboard/) — not hosted on this marketing site"
-              >Product dashboard</a
+              href="https://dashboard-puce-two.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Agentiva dashboard — welcome, register agent, onboarding (hosted on Vercel)"
+              >Agentiva Dashboard</a
             >
           </nav>
         </div>
@@ -1777,9 +1779,11 @@
           <a class="btn btn-primary" href="#install">Get started free</a>
           <a
             class="btn btn-outline"
-            href="#dashboard"
-            title="How to run the Next.js dashboard on your computer"
-            >Set up dashboard</a
+            href="https://dashboard-puce-two.vercel.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Open the Agentiva dashboard (welcome screen and onboarding)"
+            >Open dashboard</a
           >
           <a class="btn btn-outline" href="https://calendly.com/rishavaryan058/30min" target="_blank" rel="noopener">Book a demo</a>
           <a class="btn btn-outline" href="#demo">Watch demo →</a>
@@ -1798,7 +1802,10 @@
           </div>
         </div>
         <p class="hero-dashboard-note">
-          This page is the marketing site on Vercel. The <strong style="color: #fecaca">audit / live / co-pilot UI</strong> is the Next.js app in the GitHub repo — run it locally or with Docker (see <a href="#dashboard" style="color: #fca5a5">dashboard setup</a>).
+          <strong style="color: #fecaca">Welcome screen &amp; dashboard UI:</strong>
+          <a href="https://dashboard-puce-two.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">open the hosted dashboard</a>
+          (same “Welcome to Agentiva” flow as local). For live API data, run <code style="font-size: 0.85em">agentiva serve</code> and the dashboard locally, or point the hosted app at your API — see
+          <a href="#dashboard" style="color: #fca5a5">local setup</a>.
         </p>
         <div class="code-box">pip install agentiva</div>
         <div class="terminal-demo" aria-live="polite">
@@ -1890,7 +1897,11 @@ agentiva scan .</pre>
           <div class="install-step-block" id="dashboard">
             <div class="install-step-badge">3</div>
             <h3>Open the dashboard</h3>
-            <p class="install-desc">Start the Agentiva API, then the Next.js dashboard—full audit log, agents, and security co-pilot. After <code>npm run dev</code>, open <strong>http://127.0.0.1:3001</strong> (or <code>localhost:3001</code>) on <em>your</em> machine.</p>
+            <p class="install-desc">
+              Try the hosted UI first:
+              <a href="https://dashboard-puce-two.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">dashboard-puce-two.vercel.app</a>
+              — same welcome and onboarding as local. For a <strong>live</strong> audit feed and API registration against <em>your</em> machine, start the Agentiva API, then the Next.js app from the repo. After <code>npm run dev</code>, open <strong>http://127.0.0.1:3001</strong>.
+            </p>
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
@@ -1904,9 +1915,10 @@ cd dashboard &amp;&amp; npm install &amp;&amp; npm run dev
 http://127.0.0.1:3001</pre>
             </div>
             <div class="install-note">
-              <h4>Why not a button to “open dashboard” here?</h4>
+              <h4>Hosted dashboard vs local API</h4>
               <p>
-                This marketing site is static on Vercel. The product UI must run where <strong>your</strong> API and data are — typically <code style="font-size: 0.8em">localhost</code> after the steps above, or a server you deploy (e.g. Docker Compose). Live feed, audit log, audit exports (JSON, CSV, PDF), and co-pilot all use that local Next.js app.
+                The <strong>hosted</strong> dashboard shows the full welcome and onboarding UI. Agent registration and live data go through the dashboard’s proxy to
+                <code style="font-size: 0.8em">AGENTIVA_API_URL</code> — on Vercel that must be a <strong>public</strong> URL to your Agentiva API (set it in the dashboard project’s environment variables), or use the commands above so everything runs on your computer with <code style="font-size: 0.8em">localhost</code>.
               </p>
             </div>
           </div>
@@ -2215,8 +2227,13 @@ result = r.json()
             <p style="color: var(--muted); font-size: 0.95rem; margin: 0">
               Use the Agentiva dashboard: live feed, audit log, agents, policies, and co-pilot chat.
             </p>
-            <a class="dashboard-preview-tile" href="#dashboard">
-              How to run the dashboard
+            <a
+              class="dashboard-preview-tile"
+              href="https://dashboard-puce-two.vercel.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open Agentiva dashboard
             </a>
           </div>
         </div>
@@ -2389,7 +2406,9 @@ result = r.json()
           <details>
             <summary>How do I open the dashboard?</summary>
             <p>
-              The Vercel site is only this landing page — it does not host the product UI. The full dashboard (live feed, audit, co-pilot) is the Next.js app in the <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">GitHub repo</a> under <code style="font-size: 0.85em">dashboard/</code>. After you clone the repo, run <code style="font-size: 0.85em">agentiva serve --port 8000</code> and, in another terminal, <code style="font-size: 0.85em">cd dashboard &amp;&amp; npm install &amp;&amp; npm run dev</code>, then open <strong>http://127.0.0.1:3001</strong> on <em>your</em> computer. Step-by-step: <a href="#install" style="color: #fca5a5">Install</a> → <a href="#dashboard" style="color: #fca5a5">Open the dashboard</a>. Or use Docker Compose from the repo for API + UI together.
+              Click <strong>Agentiva Dashboard</strong> in the header (or
+              <a href="https://dashboard-puce-two.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">dashboard-puce-two.vercel.app</a>) for the hosted app — you’ll see the same <strong>Welcome to Agentiva</strong> onboarding as when you run it locally. For live audit feed, agent registration, and co-pilot backed by <em>your</em> data, run the stack on your machine: clone the
+              <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">repo</a>, then <code style="font-size: 0.85em">agentiva serve --port 8000</code> and <code style="font-size: 0.85em">cd dashboard &amp;&amp; npm install &amp;&amp; npm run dev</code>, and open <strong>http://127.0.0.1:3001</strong>. Details: <a href="#install" style="color: #fca5a5">Install</a> → <a href="#dashboard" style="color: #fca5a5">Open the dashboard</a>. Docker Compose from the repo also runs API + UI together.
             </p>
           </details>
           <details>
@@ -2475,7 +2494,8 @@ result = r.json()
       <div class="container">
         <div class="footer-links">
           <a href="#pricing">Pricing</a>
-          <a href="#dashboard">Dashboard setup</a>
+          <a href="https://dashboard-puce-two.vercel.app/" target="_blank" rel="noopener noreferrer">Agentiva Dashboard</a>
+          <a href="#dashboard">Local setup</a>
           <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener">GitHub</a>
           <a href="#faq">FAQ</a>
           <a href="#roadmap">Roadmap</a>

@@ -39,15 +39,16 @@
 | | Link |
 |---|------|
 | **Marketing website** | [https://website-delta-black-67.vercel.app](https://website-delta-black-67.vercel.app) |
+| **Hosted dashboard** (welcome / onboarding UI) | [https://dashboard-puce-two.vercel.app](https://dashboard-puce-two.vercel.app) |
 | **Demo video** | [Watch on Google Drive](https://drive.google.com/file/d/1PJ0MxuFMZo6Iq3HfVlUlWGZEe-B2atRg/view?usp=sharing) |
 
-The site is built from the [`website/`](website/) directory and deployed on Vercel.
+The marketing site is built from [`website/`](website/). The Next.js app in [`dashboard/`](dashboard/) can be deployed separately (e.g. Vercel); live API calls need `AGENTIVA_API_URL` pointing at a reachable Agentiva backend, or run the dashboard locally against `agentiva serve`.
 
 ---
 
 ## Why Agentiva
 
-Agents call real tools: email, databases, shells, payments. Agentiva sits **in front of those calls**, applies **YAML policies** and a **risk scorer**, supports **shadow / live / approval** style modes, and persists **audit evidence** you can export for compliance workflows.
+Agents call real tools: email, databases, shells, payments. Agentiva sits **in front of those calls**, applies **YAML policies** and a **risk scorer**, supports **shadow / live / approval** style modes, and persists **audit evidence** you can export for audit and review workflows.
 
 It is **self-hostable**, open source (Apache 2.0), and integrates with common stacks (LangChain, CrewAI, OpenAI-style tools, Anthropic, MCP, or plain HTTP).
 
@@ -59,7 +60,7 @@ It is **self-hostable**, open source (Apache 2.0), and integrates with common st
 |------------|-------------|
 | **Intercept** | Score and allow / shadow / block (or hand off to approval) before side effects run |
 | **Policy engine** | Declarative rules in YAML; tune for your org |
-| **Audit log** | Searchable history, agent registry, compliance-oriented exports in the dashboard |
+| **Audit log** | Searchable history, agent registry, audit log exports (JSON, CSV) in the dashboard |
 | **Security co-pilot** | Chat over your logs; optional LLM via OpenRouter |
 | **Project scanner** | `agentiva scan` for risky patterns in repos (optional git hook on `agentiva init`) |
 | **MCP proxy** | Route MCP traffic through interception |
@@ -87,6 +88,8 @@ agentiva serve --port 8000
 ```
 
 OpenAPI docs: `http://127.0.0.1:8000/docs`.
+
+**What PyPI includes:** the Python package only — API, CLI, policies, `agentiva scan`, and `agentiva dashboard` (that command opens the **local scan report** HTML under `.agentiva/`, not the full product UI). The **Next.js dashboard** (audit log, live feed, co-pilot, policy screens) lives in the [`dashboard/`](dashboard/) directory in this repo and is **not** shipped inside the wheel. To use it, **clone the repository** and follow [End-to-end local setup](#end-to-end-local-setup), or run **[Docker Compose](#docker-compose)**.
 
 ### From source (recommended for development)
 
@@ -155,7 +158,7 @@ Open **`http://127.0.0.1:3001`** in the browser. The dev server binds to `127.0.
 |---------|---------|
 | `agentiva serve [--port 8000] [--host 0.0.0.0] [--mode shadow\|live\|approval]` | Start the FastAPI server |
 | `agentiva scan [DIR]` | Static scan of a project tree (reports under `.agentiva/`) |
-| `agentiva dashboard [DIR]` | Open the last scan report in HTML |
+| `agentiva dashboard [DIR]` | Open the **scan report** HTML in `.agentiva/` (not the Next.js audit UI) |
 | `agentiva init` | Install git pre-push hook that runs `agentiva scan` |
 | `agentiva init-policy [--output policies/default.yaml]` | Copy default policy YAML into your tree |
 | `agentiva mcp-proxy --upstream HOST:PORT --port 3002` | MCP proxy with interception |
@@ -231,7 +234,12 @@ npx vercel --prod
 
 ## Dashboard
 
-When the Next app is running in **development**:
+There are two different things named “dashboard”:
+
+1. **`agentiva dashboard`** (works after `pip install`) — Opens the **security scan** report (`report.html` produced by `agentiva scan`). No Node.js required.
+2. **Next.js app in `dashboard/`** — The **full product UI** (overview, live actions, audit, agents, policies, chat). Requires a **repo clone** or **Docker Compose**; it is not installed by `pip install agentiva`.
+
+When the Next.js app is running in **development**:
 
 | Area | Purpose |
 |------|---------|
