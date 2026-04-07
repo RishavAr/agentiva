@@ -1060,16 +1060,6 @@
       .demo-video-foot a {
         color: #fca5a5;
       }
-      .demo-subhead {
-        font-size: clamp(1.05rem, 2vw, 1.2rem);
-        font-weight: 600;
-        text-align: center;
-        margin: 2.25rem 0 0.65rem;
-        color: var(--text);
-      }
-      .demo-subhead:first-of-type {
-        margin-top: 0;
-      }
       .demo-gif-wrap {
         max-width: min(920px, 100%);
         margin: 0 auto 0.75rem;
@@ -1082,8 +1072,11 @@
       }
       .demo-gif-wrap img {
         width: 100%;
+        max-height: min(85vh, 920px);
         height: auto;
+        object-fit: contain;
         display: block;
+        margin: 0 auto;
         vertical-align: middle;
       }
       .reveal {
@@ -2153,39 +2146,23 @@ result = r.json()
       <div class="container">
         <h2>Demo</h2>
         <p class="section-lead">
-          Short <strong style="color: #fecaca">GIF</strong> loop plus full <strong style="color: #fecaca">video</strong> walkthrough. Replace the placeholder GIF in the repo with your own screen capture (terminal, dashboard, or IDE).
-        </p>
-        <h3 class="demo-subhead">Quick loop (GIF)</h3>
-        <p class="section-lead" style="margin-bottom: 1rem; font-size: 0.92rem">
-          File: <code style="font-size: 0.85em">website/assets/demo.gif</code> — same asset pattern as
-          <code style="font-size: 0.85em">assets/demo.gif</code> in the README.
+          Screen capture: PayBot, terminal, and dashboard. For the full walkthrough, use the
+          <strong style="color: #fecaca">Google Drive</strong> link below (share as <strong style="color: #fecaca">Anyone with the link</strong> for embeds to work when shared).
         </p>
         <div class="demo-gif-wrap">
-          <img src="assets/demo.gif" alt="Agentiva — short screen demo (GIF)" loading="lazy" decoding="async" />
+          <img src="assets/demo.gif" alt="Agentiva demo — PayBot, IDE, and dashboard (GIF)" loading="lazy" decoding="async" />
         </div>
-        <p class="demo-video-foot" style="margin-bottom: 2rem">
-          Export from screen recording (e.g. macOS QuickTime → gifski or ffmpeg). Keep file size modest for fast loads.
-        </p>
-        <h3 class="demo-subhead">Full walkthrough (video)</h3>
-        <p class="section-lead">
-          Product walkthrough (hosted on Google Drive). If the player does not load, open the video in a new tab—Drive requires the file to be shared as
-          <strong style="color: #fecaca; font-weight: 600">Anyone with the link</strong> for embeds to work for all visitors.
-        </p>
-        <div class="demo-video-wrap">
-          <iframe
-            src="https://drive.google.com/file/d/1PJ0MxuFMZo6Iq3HfVlUlWGZEe-B2atRg/preview"
-            title="Agentiva product demo"
-            allow="autoplay; fullscreen; picture-in-picture"
-            allowfullscreen
-            loading="lazy"
-            referrerpolicy="no-referrer-when-downgrade"
-          ></iframe>
-        </div>
-        <p class="demo-video-foot">
-          <a href="https://drive.google.com/file/d/1PJ0MxuFMZo6Iq3HfVlUlWGZEe-B2atRg/view?usp=sharing" target="_blank" rel="noopener noreferrer"
-            >Open in Google Drive</a
+        <p class="demo-video-foot" style="margin-top: 1.25rem; font-size: 1rem">
+          <a
+            href="https://drive.google.com/file/d/1PJ0MxuFMZo6Iq3HfVlUlWGZEe-B2atRg/view?usp=sharing"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="font-weight: 600"
+            >Watch full demo on Google Drive →</a
           >
-          · Run locally:
+        </p>
+        <p class="demo-video-foot" style="margin-top: 0.5rem; font-size: 0.88rem; color: var(--muted)">
+          Run locally:
           <code style="font-size: 0.82em; background: rgba(12, 4, 6, 0.92); padding: 0.2rem 0.45rem; border-radius: 6px; border: 1px solid var(--border)"
             >python demo/paybot_demo.py</code
           >

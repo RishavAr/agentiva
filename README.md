@@ -47,9 +47,7 @@ The marketing site is built from [`website/`](website/). The Next.js app in [`da
 
 ### Screen demo (GIF)
 
-Drop a short screen recording (terminal, dashboard, IDE) as **`assets/demo.gif`** at the repo root. GitHub renders it inline in the README. Keep the file reasonably small (a few MB) so the page stays fast.
-
-The marketing site uses the same asset at [`website/assets/demo.gif`](website/assets/demo.gif) — copy or replace both when you update the loop.
+The repo includes **`assets/demo.gif`** (screen capture — PayBot, terminal, dashboard). The [marketing site](https://website-delta-black-67.vercel.app) shows the same file from [`website/assets/demo.gif`](website/assets/demo.gif) and links to the **full video** on [Google Drive](https://drive.google.com/file/d/1PJ0MxuFMZo6Iq3HfVlUlWGZEe-B2atRg/view?usp=sharing). If the GIF is large, consider compressing before commit for faster loads.
 
 ![Agentiva screen demo](assets/demo.gif)
 
