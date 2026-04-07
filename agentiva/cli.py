@@ -3,7 +3,6 @@ import asyncio
 import html
 import json
 import os
-import re
 import shutil
 import socket
 import subprocess
@@ -15,6 +14,7 @@ from pathlib import Path
 from agentiva.api.server import run_server
 from agentiva.interceptor.core import Agentiva
 from agentiva.interceptor.mcp_proxy import run_proxy
+from agentiva.project_scan import read_utf8_text_file, scan_text_file
 
 
 def _resolve_default_policy_path() -> str:
@@ -228,7 +228,7 @@ def find_available_port(listen_host: str = "0.0.0.0", start: int = 8000, end: in
 
 
 def _cmd_scan(args: argparse.Namespace) -> None:
-    """Walk a directory tree, heuristically flag secrets, risky shell, bad deps, PII hints."""
+    """Walk a directory tree: UTF-8 text files ≤1MB, all extensions; dependency manifests also checked for bad packages."""
     directory = args.directory
     abs_dir = os.path.abspath(directory)
     if not os.path.isdir(abs_dir):
@@ -246,45 +246,9 @@ def _cmd_scan(args: argparse.Namespace) -> None:
     gitignore_warned = False
     scan_issues: list[dict] = []
 
-    credential_patterns = [
-        "password",
-        "secret_key",
-        "api_key",
-        "access_key",
-        "private_key",
-        "database_url",
-        "db_password",
-        "stripe_secret",
-        "openai_api_key",
-        "aws_secret",
-        "begin rsa private key",
-        "begin private key",
-        "sk-proj-",
-        "sk_live_",
-        "akia",
-    ]
-
-    shell_substrings = [
-        "rm -rf",
-        "git push --force",
-        "git push -f",
-        "drop table",
-        "delete from",
-        "chmod 777",
-        "kill -9",
-        "pkill",
-        "shutdown",
-        "dd if=",
-        "mkfs",
-        "> /dev/sd",
-    ]
-    shell_regexes = [
-        re.compile(r"curl\s+[^\n]*\|\s*bash", re.IGNORECASE),
-        re.compile(r"wget\s+[^\n]*\|\s*sh", re.IGNORECASE),
-    ]
-
     skip_dir_names = {
         ".git",
+        ".agentiva",
         "node_modules",
         "__pycache__",
         "venv",
@@ -300,185 +264,37 @@ def _cmd_scan(args: argparse.Namespace) -> None:
         ".mypy_cache",
     }
 
-    skip_suffixes = (
-        ".png",
-        ".jpg",
-        ".jpeg",
-        ".gif",
-        ".webp",
-        ".ico",
-        ".woff",
-        ".woff2",
-        ".ttf",
-        ".eot",
-        ".pyc",
-        ".pyo",
-        ".so",
-        ".dylib",
-        ".dll",
-        ".exe",
-        ".zip",
-        ".tar",
-        ".gz",
-        ".pdf",
-        ".mp4",
-        ".mp3",
-        ".wasm",
-    )
-
-    dep_files = {"requirements.txt", "package.json", "pipfile", "pyproject.toml"}
-
     for root, dirs, files in os.walk(abs_dir):
         dirs[:] = [d for d in dirs if d not in skip_dir_names]
 
         for filename in files:
             filepath = os.path.join(root, filename)
             rel_path = os.path.relpath(filepath, abs_dir)
-            lower_name = filename.lower()
 
             try:
-                if lower_name.endswith(skip_suffixes):
-                    continue
-                if os.path.getsize(filepath) > 500_000:
-                    continue
-
-                with open(filepath, encoding="utf-8", errors="ignore") as f:
-                    content = f.read()
-
-                if not content.strip():
+                content, _ = read_utf8_text_file(filepath)
+                if content is None:
                     continue
 
                 files_scanned += 1
-                content_lower = content.lower()
+                if not content.strip():
+                    continue
 
-                found_creds = [p for p in credential_patterns if p in content_lower]
-                if found_creds:
-                    action = shield.intercept_sync(
-                        "read_file",
-                        {
-                            "path": rel_path,
-                            "credentials_found": found_creds,
-                            "content_preview": content[:200],
-                        },
-                        agent_id=scan_agent_id,
-                    )
-                    if action.decision in ("block", "shadow"):
-                        issues_found += 1
-                        icon = "[BLOCK]" if action.decision == "block" else "[WARN]"
-                        print(f"  {icon} {rel_path}")
-                        print(f"     Hardcoded credentials: {', '.join(found_creds)}")
-                        print(f"     Risk: {action.risk_score:.2f}\n")
-                        scan_issues.append(
-                            {
-                                "file": rel_path,
-                                "decision": action.decision,
-                                "risk": float(action.risk_score),
-                                "tool_name": action.tool_name,
-                                "description": f"Hardcoded credentials: {', '.join(found_creds)}",
-                            }
-                        )
-
-                if lower_name.endswith((".sh", ".bash", ".zsh")):
-                    found_dangerous = [d for d in shell_substrings if d in content_lower]
-                    for rx in shell_regexes:
-                        if rx.search(content):
-                            found_dangerous.append(rx.pattern)
-                    if found_dangerous:
-                        action = shield.intercept_sync(
-                            "run_shell_command",
-                            {"command": content[:8000], "file": rel_path},
-                            agent_id=scan_agent_id,
-                        )
-                        if action.decision in ("block", "shadow"):
-                            issues_found += 1
-                            icon = "[BLOCK]" if action.decision == "block" else "[WARN]"
-                            print(f"  {icon} {rel_path}")
-                            print(f"     Dangerous commands: {', '.join(found_dangerous[:12])}")
-                            print(f"     Risk: {action.risk_score:.2f}\n")
-                            scan_issues.append(
-                                {
-                                    "file": rel_path,
-                                    "decision": action.decision,
-                                    "risk": float(action.risk_score),
-                                    "tool_name": action.tool_name,
-                                    "description": f"Dangerous commands: {', '.join(found_dangerous[:12])}",
-                                }
-                            )
-
-                if lower_name in dep_files:
-                    known_compromised = [
-                        "litellm==1.82.8",
-                        "litellm==1.82.7",
-                        "event-stream",
-                        "ua-parser-js",
-                        "colors@1.4.1",
-                        "faker@6.6.6",
-                    ]
-                    found_bad = [d for d in known_compromised if d in content]
-                    if found_bad:
-                        action = shield.intercept_sync(
-                            "install_package",
-                            {"packages": found_bad, "file": rel_path},
-                            agent_id=scan_agent_id,
-                        )
-                        issues_found += 1
-                        print(f"  [BLOCK] {rel_path}")
-                        print(f"     Compromised packages: {', '.join(found_bad)}")
-                        print(f"     Risk: {action.risk_score:.2f}\n")
-                        scan_issues.append(
-                            {
-                                "file": rel_path,
-                                "decision": action.decision,
-                                "risk": float(action.risk_score),
-                                "tool_name": action.tool_name,
-                                "description": f"Compromised packages: {', '.join(found_bad)}",
-                            }
-                        )
-
-                if lower_name.endswith((".py", ".js", ".ts", ".tsx", ".jsx", ".mjs", ".cjs")):
-                    if "export" in content_lower and (
-                        "ssn" in content_lower or "credit_card" in content_lower
-                    ):
-                        action = shield.intercept_sync(
-                            "read_customer_data",
-                            {
-                                "customer_id": "*",
-                                "fields": "ssn,credit_card",
-                                "file": rel_path,
-                            },
-                            agent_id=scan_agent_id,
-                        )
-                        if action.decision in ("block", "shadow"):
-                            issues_found += 1
-                            icon = "[BLOCK]" if action.decision == "block" else "[WARN]"
-                            print(f"  {icon} {rel_path}")
-                            print("     Endpoint exposes PII (SSN/credit card)")
-                            print(f"     Risk: {action.risk_score:.2f}\n")
-                            scan_issues.append(
-                                {
-                                    "file": rel_path,
-                                    "decision": action.decision,
-                                    "risk": float(action.risk_score),
-                                    "tool_name": action.tool_name,
-                                    "description": "Endpoint exposes PII (SSN/credit card)",
-                                }
-                            )
-
-                if lower_name == ".gitignore":
-                    if ".env" not in content and not gitignore_warned:
-                        gitignore_warned = True
-                        issues_found += 1
-                        print("  [WARN] .gitignore missing .env")
-                        print("     Credentials could be committed to git\n")
-                        scan_issues.append(
-                            {
-                                "file": rel_path,
-                                "decision": "shadow",
-                                "risk": 0.45,
-                                "tool_name": "read_file",
-                                "description": ".gitignore missing .env — credentials could be committed to git",
-                            }
-                        )
+                new_issues, gitignore_warned = scan_text_file(
+                    rel_path,
+                    content,
+                    filename,
+                    shield,
+                    scan_agent_id,
+                    gitignore_warned,
+                )
+                for row in new_issues:
+                    issues_found += 1
+                    scan_issues.append(row)
+                    icon = "[BLOCK]" if row.get("decision") == "block" else "[WARN]"
+                    print(f"  {icon} {rel_path}")
+                    print(f"     {row.get('description', '')}")
+                    print(f"     Risk: {row.get('risk', 0):.2f}\n")
 
             except OSError:
                 continue

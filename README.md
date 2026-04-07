@@ -19,6 +19,7 @@
 - [Why Agentiva](#why-agentiva)
 - [What you get](#what-you-get)
 - [Prerequisites](#prerequisites)
+- [Quick start](#quick-start)
 - [Install](#install)
 - [End-to-end local setup](#end-to-end-local-setup)
 - [CLI reference](#cli-reference)
@@ -77,6 +78,64 @@ It is **self-hostable**, open source (Apache 2.0), and integrates with common st
 | **Node.js** | Current LTS recommended for the Next.js dashboard |
 | **Git** | For clone and optional pre-push hook |
 | **Docker** (optional) | Docker Compose for full stack + Postgres + Redis |
+
+---
+
+## Quick start
+
+Two ways to use Agentiva: **scan on every git push** (coding agents) or **intercept tool calls at runtime** (agent frameworks).
+
+### AI coding agents
+
+```bash
+pip install agentiva
+cd your-project
+agentiva init
+```
+
+Then commit and push as usual. Agentiva scans on each push; if critical issues are found, the push is blocked. Fix the findings and push again.
+
+```bash
+git add .
+git commit -m "your change"
+git push
+```
+
+```bash
+agentiva dashboard   # opens the HTML scan report in your browser
+```
+
+After `agentiva init`, every git push is protected automatically — no extra commands for day-to-day work.
+
+### Agent frameworks
+
+```bash
+pip install agentiva
+agentiva serve
+```
+
+The API starts; use [End-to-end local setup](#end-to-end-local-setup) for the full Next.js dashboard (audit log, live feed, co-pilot). Wrap tools with `Agentiva` — see [Wire Agentiva into your agent](#wire-agentiva-into-your-agent). Start in **shadow** mode to observe; switch to **live** to block; use **approval** for human-in-the-loop.
+
+### What Agentiva checks on every scan
+
+Hardcoded credentials · SQL injection · Prompt injection · LLM output execution · Compromised packages · PII exposure · Base64 obfuscation · Weak hashing · Command injection · XSS · JWT bypass · Path traversal · Typosquatted domains · Privilege escalation · SSH key injection · Remote exfiltration — across file types.
+
+### FAQ (short)
+
+| Question | Answer |
+|----------|--------|
+| **Languages / file types?** | Project-wide: Python, JavaScript, TypeScript, Go, Java, Ruby, PHP, YAML, JSON, `.env`, Markdown, shell scripts, configs, and more. |
+| **Runs automatically?** | Yes — run `agentiva init` once; then every `git push` is scanned. |
+| **Blocks deployment?** | Critical issues block push; warnings are logged but typically do not block. |
+| **Slow?** | Scans are local pattern checks (seconds on typical repos; no LLM in the scanner). |
+| **Replaces a pentest?** | No — use Agentiva as a first line of defense; still do formal reviews for production. |
+| **Only AI-written code?** | No — all code is scanned. |
+| **Customize rules?** | Yes — YAML policies, thresholds, allowlists. |
+| **vs VibeLint / Snyk?** | Static patterns plus **runtime** interception for agent actions (email, DB, APIs). |
+| **Data privacy?** | Runs locally; scan output under `.agentiva/` (hook adds it to `.gitignore`). |
+| **See results?** | Terminal on push; `agentiva dashboard` for HTML report; `agentiva serve` for live dashboard. |
+| **MCP?** | Use `agentiva mcp-proxy` — point the client at Agentiva instead of upstream. |
+| **Cursor?** | `pip install agentiva` + `agentiva init` in the repo; add `agentiva serve` for live monitoring. |
 
 ---
 
@@ -367,4 +426,4 @@ For day-to-day development, keep the hook or adjust scan configuration as your t
 
 [GitHub](https://github.com/RishavAr) · [Twitter](https://twitter.com/RISHAVA28874444) · [LinkedIn](https://linkedin.com/in/rishav-aryan)
 
-Repository: [github.com/RishavAr/agentshield](https://github.com/RishavAr/agentiva)
+Repository: [github.com/RishavAr/agentiva](https://github.com/RishavAr/agentiva)

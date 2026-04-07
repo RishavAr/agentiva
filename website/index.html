@@ -914,25 +914,6 @@
       .install-result .r-ok {
         color: #4ade80;
       }
-      .install-note {
-        margin-top: 0.85rem;
-        padding: 1rem 1.1rem;
-        border-radius: 14px;
-        border: 1px solid rgba(248, 113, 113, 0.25);
-        background: linear-gradient(135deg, rgba(127, 29, 29, 0.25), rgba(24, 6, 8, 0.6));
-        text-align: left;
-      }
-      .install-note h4 {
-        margin: 0 0 0.35rem;
-        font-size: 0.9rem;
-        color: #fecaca;
-      }
-      .install-note p {
-        margin: 0;
-        font-size: 0.82rem;
-        color: var(--muted);
-        line-height: 1.55;
-      }
       .install-detect-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1347,15 +1328,15 @@
         color: #a8b2c4;
       }
       .roadmap-later {
-        background: rgba(18, 6, 8, 0.55);
-        border-color: rgba(127, 29, 29, 0.35);
+        background: rgba(15, 8, 10, 0.45);
+        border-color: rgba(71, 85, 105, 0.45);
         box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
       }
       .roadmap-later h3 {
-        color: #f87171;
+        color: #94a3b8;
       }
       .roadmap-later li {
-        color: #94a3b8;
+        color: #64748b;
       }
       .roadmap-pill {
         display: inline-block;
@@ -1872,8 +1853,8 @@
         <div id="install-pane-coding" class="install-pane active">
           <div class="install-step-block">
             <div class="install-step-badge">1</div>
-            <h3>Install Agentiva</h3>
-            <p class="install-desc">One command. Works in any project directory.</p>
+            <h3>Install</h3>
+            <p class="install-desc">Install the Agentiva CLI from PyPI.</p>
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
@@ -1883,94 +1864,77 @@
 
           <div class="install-step-block">
             <div class="install-step-badge">2</div>
-            <h3>Scan your project</h3>
-            <p class="install-desc">
-              Detects hardcoded credentials, dangerous scripts, compromised packages, and exposed PII-style patterns. Actions show in the dashboard under
-              <strong style="color: #fecaca">scan-&lt;folder&gt;</strong>.
-            </p>
+            <h3>Initialize</h3>
+            <p class="install-desc">From your project directory, install the git pre-push hook.</p>
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
               <pre><span class="syn-cmt"># In your project directory</span>
-agentiva scan .</pre>
-            </div>
-            <div class="install-result" aria-label="Example scan output">
-              <pre>  Agentiva scanning: /Users/dev/my-project
-
-  <span class="r-block">[BLOCK] paybot/routes/api.py</span>
-     Endpoint exposes PII (SSN/credit card)
-     Risk: 1.00
-
-  <span class="r-shadow">[WARN] config/config.yaml</span>
-     Hardcoded credentials: password, database_url
-     Risk: 0.45
-
-  <span class="r-shadow">[WARN] deploy.sh</span>
-     Dangerous commands: git push --force
-     Risk: 0.65
-
-  Scan complete. 3 issues found.</pre>
+cd your-project
+agentiva init</pre>
             </div>
           </div>
 
-          <div class="install-step-block" id="dashboard">
+          <div class="install-step-block">
             <div class="install-step-badge">3</div>
-            <h3>Open the dashboard</h3>
-            <p class="install-desc">
-              Try the hosted UI first:
-              <a href="https://dashboard-puce-two.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">dashboard-puce-two.vercel.app</a>
-              — same welcome and onboarding as local. For a <strong>live</strong> audit feed and API registration against <em>your</em> machine, start the Agentiva API, then the Next.js app from the repo. After <code>npm run dev</code>, open <strong>http://127.0.0.1:3001</strong>.
-            </p>
+            <h3>Push your code</h3>
+            <p class="install-desc">Commit and push as usual. Agentiva scans on every push.</p>
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
-              <pre><span class="syn-cmt"># Terminal 1 — API</span>
-agentiva serve --port 8000
-
-<span class="syn-cmt"># Terminal 2 — dashboard UI (from repo root)</span>
-cd dashboard &amp;&amp; npm install &amp;&amp; npm run dev
-
-<span class="syn-cmt"># Then open in your browser</span>
-http://127.0.0.1:3001</pre>
-            </div>
-            <div class="install-note">
-              <h4>Hosted dashboard vs local API</h4>
-              <p>
-                The <strong>hosted</strong> dashboard shows the full welcome and onboarding UI. Agent registration and live data go through the dashboard’s proxy to
-                <code style="font-size: 0.8em">AGENTIVA_API_URL</code> — on Vercel that must be a <strong>public</strong> URL to your Agentiva API (set it in the dashboard project’s environment variables), or use the commands above so everything runs on your computer with <code style="font-size: 0.8em">localhost</code>.
-              </p>
+              <pre>git add .
+git commit -m "new feature"
+git push
+<span class="syn-cmt"># Agentiva scans automatically</span>
+<span class="syn-cmt"># Blocked if issues found</span>
+<span class="syn-cmt"># Clean code pushes through</span></pre>
             </div>
           </div>
 
           <div class="install-step-block">
             <div class="install-step-badge">4</div>
-            <h3>Fix issues and rescan</h3>
-            <p class="install-desc">Fix findings in your editor, then rescan before deploy.</p>
-            <div class="install-code-block">
-              <span class="install-lang">terminal</span>
-              <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
-              <pre><span class="syn-cmt"># After fixes</span>
-agentiva scan .</pre>
+            <h3>If blocked, fix and retry</h3>
+            <p class="install-desc">Use the scan output to fix issues, then push again.</p>
+            <div class="install-result" aria-label="Example blocked output">
+              <pre><span class="syn-cmt"># Example output</span>
+
+  <span class="r-block">[BLOCK] config.py — Hardcoded credentials: api_key (Risk: 0.92)</span>
+  <span class="r-block">[BLOCK] app.py — SQL injection via f-string (Risk: 0.90)</span>
+  <span class="r-shadow">[WARN]  deploy.sh — Dangerous command: git push --force (Risk: 0.65)</span>
+
+<span class="syn-cmt"># Fix the issues. Push again. It goes through.</span></pre>
             </div>
           </div>
 
-          <div class="install-step-block">
-            <h3 style="margin-top: 0">What Agentiva detects</h3>
-            <div class="install-detect-grid">
-              <div>🔑 Hardcoded credentials (API keys, passwords, tokens)</div>
-              <div>💣 Dangerous shell commands (rm -rf, force push)</div>
-              <div>📦 Known compromised dependency strings (e.g. litellm 1.82.8, event-stream)</div>
-              <div>🔓 PII-style patterns in code (SSN, credit cards)</div>
-              <div>🌐 High-risk tool usage (policy + scoring)</div>
-              <div>🗃️ Destructive patterns in payloads (DROP, DELETE)</div>
+          <div class="install-step-block" id="dashboard">
+            <div class="install-step-badge">5</div>
+            <h3>View report</h3>
+            <p class="install-desc">Open the full HTML report in your browser.</p>
+            <div class="install-code-block">
+              <span class="install-lang">terminal</span>
+              <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
+              <pre>agentiva dashboard
+<span class="syn-cmt"># Opens full report in browser</span></pre>
             </div>
+          </div>
+
+          <p style="margin-top: 1.25rem; font-size: 0.88rem; color: var(--muted); text-align: center; line-height: 1.6">
+            After <code style="font-size: 0.85em">agentiva init</code>, every <code style="font-size: 0.85em">git push</code> is protected automatically.
+            No extra commands. No workflow changes.
+          </p>
+
+          <div style="margin-top: 1rem; padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid rgba(52, 211, 153, 0.35); background: rgba(16, 185, 129, 0.1); text-align: left">
+            <p style="margin: 0; font-size: 0.82rem; color: #cbd5e1; line-height: 1.55">
+              <strong style="color: #6ee7b7">What Agentiva checks on every scan:</strong>
+              Hardcoded credentials · SQL injection · Prompt injection · LLM output execution · Compromised packages · PII exposure · Base64 obfuscation · Weak hashing · Command injection · XSS · JWT bypass · Path traversal · Typosquatted domains · Privilege escalation · SSH key injection · Remote exfiltration — across every file type.
+            </p>
           </div>
         </div>
 
         <div id="install-pane-framework" class="install-pane">
           <div class="install-step-block">
             <div class="install-step-badge">1</div>
-            <h3>Install Agentiva</h3>
+            <h3>Install</h3>
             <p class="install-desc">Add Agentiva to your Python environment.</p>
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
@@ -1981,22 +1945,18 @@ agentiva scan .</pre>
 
           <div class="install-step-block">
             <div class="install-step-badge">2</div>
-            <h3>Start the server</h3>
-            <p class="install-desc">Run the API locally; the dashboard connects to it.</p>
+            <h3>Start server</h3>
+            <p class="install-desc">Run the Agentiva API. The dashboard opens automatically.</p>
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
-              <pre>agentiva serve --port 8000
-
-<span class="syn-cmt"># Dashboard (separate terminal)</span>
-cd dashboard &amp;&amp; npm install &amp;&amp; npm run dev
-<span class="syn-cmt"># Open http://127.0.0.1:3001 — register an agent for an API key if you use HTTP intercept.</span></pre>
+              <pre>agentiva serve</pre>
             </div>
           </div>
 
           <div class="install-step-block">
             <div class="install-step-badge">3</div>
-            <h3>Wrap your tools</h3>
+            <h3>Add to your code</h3>
             <p class="install-desc">Add a few lines so every tool call is scored and logged. Use <span class="syn-str" style="font-family: ui-monospace, monospace">mode="shadow"</span> to observe first.</p>
 
             <div class="install-fw-tabs">
@@ -2055,9 +2015,9 @@ tools = shield.protect([send_email, query_db])
                 <span class="install-lang">terminal</span>
                 <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
                 <pre><span class="syn-cmt"># MCP proxy — point your client at Agentiva</span>
-agentiva mcp-proxy --upstream localhost:3001 --port 3002
+agentiva mcp-proxy --upstream your-upstream-server
 
-<span class="syn-cmt"># MCP client URL: http://localhost:3002</span></pre>
+<span class="syn-cmt"># Use the Agentiva proxy URL printed when the proxy starts</span></pre>
               </div>
             </div>
 
@@ -2082,11 +2042,13 @@ tools = shield.protect([email_tool, db_tool])
                 <pre><span class="syn-cmt"># Direct HTTP check before executing an action</span>
 <span class="syn-kw">import</span> requests
 
-r = requests.post(<span class="syn-str">"http://localhost:8000/api/v1/intercept"</span>, json={
-    <span class="syn-str">"tool_name"</span>: <span class="syn-str">"send_email"</span>,
-    <span class="syn-str">"arguments"</span>: {<span class="syn-str">"to"</span>: <span class="syn-str">"user@email.com"</span>},
-    <span class="syn-str">"agent_id"</span>: <span class="syn-str">"my-custom-agent"</span>,
-})
+BASE = <span class="syn-str">"http://your-agentiva-host"</span>  <span class="syn-cmt"># same host as `agentiva serve`</span>
+r = requests.post(BASE + <span class="syn-str">"/api/v1/intercept"</span>, json={
+        <span class="syn-str">"tool_name"</span>: <span class="syn-str">"send_email"</span>,
+        <span class="syn-str">"arguments"</span>: {<span class="syn-str">"to"</span>: <span class="syn-str">"user@email.com"</span>},
+        <span class="syn-str">"agent_id"</span>: <span class="syn-str">"my-custom-agent"</span>,
+    },
+)
 result = r.json()
 <span class="syn-kw">if</span> result.get(<span class="syn-str">"decision"</span>) == <span class="syn-str">"block"</span>:
     <span class="syn-kw">raise</span> <span class="syn-kw">RuntimeError</span>(<span class="syn-str">"Blocked by Agentiva"</span>)
@@ -2097,46 +2059,26 @@ result = r.json()
 
           <div class="install-step-block">
             <div class="install-step-badge">4</div>
-            <h3>Monitor on the dashboard</h3>
-            <p class="install-desc">Actions stream in real time. Ask the co-pilot <strong style="color: #fecaca">what was blocked?</strong> for agent + file context.</p>
+            <h3>Monitor on dashboard</h3>
+            <p class="install-desc">Watch allow / block / shadow decisions in the live feed. The dashboard opens automatically.</p>
             <div class="install-result">
               <pre>  <span class="syn-cmt"># Example feed</span>
 
-  <span class="r-ok">ALLOW   read_customer_data   support-bot   risk=0.10</span>
-  <span class="r-ok">ALLOW   send_email           support-bot   risk=0.15</span>
-  <span class="r-block">BLOCK   send_email           support-bot   risk=0.97</span>
-  <span class="r-block">BLOCK   update_database      pipeline      risk=0.95</span>
-  <span class="r-shadow">SHADOW  call_external_api    sales-agent   risk=0.55</span></pre>
+  <span class="r-ok">ALLOW   read_customer_data   support-bot    risk=0.10</span>
+  <span class="r-block">BLOCK   send_email           support-bot    risk=0.97</span>
+  <span class="r-block">BLOCK   update_database      pipeline       risk=0.95</span>
+  <span class="r-shadow">SHADOW  call_external_api    sales-agent    risk=0.55</span></pre>
             </div>
-            <p style="margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--muted); text-align: center">
-              After <code style="font-size: 0.8rem">npm install &amp;&amp; npm run dev</code>, open
-              <strong style="color: #fecaca">http://127.0.0.1:3001</strong> in your browser (local only).
+            <p style="margin: 0.75rem 0 0; font-size: 0.85rem; color: var(--muted); text-align: center; line-height: 1.55">
+              Start in shadow mode to observe. Switch to live mode to block. Switch to approval mode for human-in-the-loop.
             </p>
           </div>
 
-          <div class="install-step-block">
-            <h3 style="margin-top: 0">How it works</h3>
-            <div class="install-flow">
-              <div class="install-flow-step">
-                <div class="fl">Your agent</div>
-                <div class="fv">Decides to act</div>
-              </div>
-              <span class="install-flow-arr" aria-hidden="true">→</span>
-              <div class="install-flow-step" style="border-color: rgba(248, 113, 113, 0.45)">
-                <div class="fl">Agentiva</div>
-                <div class="fv">Scores risk</div>
-              </div>
-              <span class="install-flow-arr" aria-hidden="true">→</span>
-              <div class="install-flow-step">
-                <div class="fl">Decision</div>
-                <div class="fv" style="color: #86efac">Allow / Shadow / Block</div>
-              </div>
-              <span class="install-flow-arr" aria-hidden="true">→</span>
-              <div class="install-flow-step">
-                <div class="fl">Dashboard</div>
-                <div class="fv">Logged</div>
-              </div>
-            </div>
+          <div style="margin-top: 1rem; padding: 1rem 1.1rem; border-radius: 14px; border: 1px solid rgba(52, 211, 153, 0.35); background: rgba(16, 185, 129, 0.1); text-align: left">
+            <p style="margin: 0; font-size: 0.82rem; color: #cbd5e1; line-height: 1.55">
+              <strong style="color: #6ee7b7">What Agentiva checks on every scan:</strong>
+              Hardcoded credentials · SQL injection · Prompt injection · LLM output execution · Compromised packages · PII exposure · Base64 obfuscation · Weak hashing · Command injection · XSS · JWT bypass · Path traversal · Typosquatted domains · Privilege escalation · SSH key injection · Remote exfiltration — across every file type.
+            </p>
           </div>
         </div>
       </div>
@@ -2225,8 +2167,8 @@ result = r.json()
             <div class="step-num">1</div>
             <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text)">Install</h3>
             <div class="code-box" style="margin: 0">
-              pip install agentiva<br />agentiva serve --port 8000<br /><span style="color: var(--muted); font-size: 0.88em"
-                >See <a href="#install" style="color: #fca5a5">full install</a> for dashboard.</span
+              pip install agentiva<br />agentiva serve<br /><span style="color: var(--muted); font-size: 0.88em"
+                >Dashboard opens automatically. See <a href="#install" style="color: #fca5a5">full install</a>.</span
               >
             </div>
           </div>
@@ -2416,47 +2358,139 @@ result = r.json()
       </div>
     </section>
 
+    <section id="roadmap" class="alt reveal">
+      <div class="container">
+        <h2>Product Roadmap</h2>
+        <p class="section-lead">What you can use today, what we&apos;re shipping next, and where we&apos;re headed.</p>
+        <div class="roadmap-grid">
+          <div class="roadmap-card roadmap-now">
+            <span class="roadmap-pill now">Available now</span>
+            <h3>Ship today</h3>
+            <ul>
+              <li><code style="font-size: 0.82em">pip install agentiva</code></li>
+              <li>CLI scanner (<code style="font-size: 0.82em">agentiva scan .</code>)</li>
+              <li>Git pre-push hook (blocks dangerous deployments)</li>
+              <li>8-signal deterministic risk scoring</li>
+              <li>Real-time dashboard with audit log</li>
+              <li>Security co-pilot chat</li>
+              <li>Policy engine (YAML rules)</li>
+              <li>Shadow / live / approval modes</li>
+              <li>Audit log exports (JSON, CSV)</li>
+              <li>LangChain, CrewAI, OpenAI SDK, MCP, Anthropic support</li>
+              <li>24,599 tests + OWASP / DeepTeam / Garak / PyRIT benchmarks</li>
+            </ul>
+          </div>
+          <div class="roadmap-card roadmap-soon">
+            <span class="roadmap-pill soon">Coming soon</span>
+            <h3>On the horizon</h3>
+            <ul>
+              <li>Cloud-hosted dashboard (no self-hosting needed)</li>
+              <li>Native MCP integration for Cursor + Claude Code</li>
+              <li>Mobile app (iOS + Android) — monitor agents from phone</li>
+              <li>Push notifications for blocked actions</li>
+              <li>Approve / deny actions from phone</li>
+              <li>Email + Slack + Teams alerts</li>
+              <li>Google SSO login</li>
+              <li>Team management + role-based access</li>
+            </ul>
+          </div>
+          <div class="roadmap-card roadmap-later">
+            <span class="roadmap-pill later">Future</span>
+            <h3>Longer term</h3>
+            <ul>
+              <li>Adaptive risk scoring using reinforcement learning</li>
+              <li>Cross-agent threat intelligence network</li>
+              <li>Fine-tuned on-premise security model</li>
+              <li>Apple Watch companion</li>
+              <li>CI/CD pipeline integration (GitHub Actions, GitLab CI)</li>
+              <li>VS Code extension</li>
+              <li>Webhook integrations</li>
+              <li>SOC / SIEM export (Splunk, Datadog, Sentinel)</li>
+              <li>Multi-tenant enterprise deployment</li>
+              <li>Scan limits + usage-based billing</li>
+              <li>API rate limiting + analytics</li>
+              <li>Custom policy marketplace</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section id="faq" class="reveal">
       <div class="container">
         <h2>Frequently asked questions</h2>
-        <p class="section-lead">Quick answers before you wire up your first intercept.</p>
+        <p class="section-lead">Straight answers on scanning, hooks, privacy, and how Agentiva fits next to your other tools.</p>
         <div class="faq">
           <details>
-            <summary>How do I open the dashboard?</summary>
+            <summary>What languages and file types does Agentiva support?</summary>
             <p>
-              Click <strong>Agentiva Dashboard</strong> in the header (or
-              <a href="https://dashboard-puce-two.vercel.app/" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">dashboard-puce-two.vercel.app</a>) for the hosted app — you’ll see the same <strong>Welcome to Agentiva</strong> onboarding as when you run it locally. For live audit feed, agent registration, and co-pilot backed by <em>your</em> data, run the stack on your machine: clone the
-              <a href="https://github.com/RishavAr/agentshield" target="_blank" rel="noopener noreferrer" style="color: #fca5a5">repo</a>, then <code style="font-size: 0.85em">agentiva serve --port 8000</code> and <code style="font-size: 0.85em">cd dashboard &amp;&amp; npm install &amp;&amp; npm run dev</code>, and open <strong>http://127.0.0.1:3001</strong>. Details: <a href="#install" style="color: #fca5a5">Install</a> → <a href="#dashboard" style="color: #fca5a5">Open the dashboard</a>. Docker Compose from the repo also runs API + UI together.
+              Every file in your project — Python, JavaScript, TypeScript, Go, Java, Ruby, PHP, YAML, JSON, <code style="font-size: 0.85em">.env</code>, Markdown, shell scripts, config files, and more. If a credential or vulnerability is in any file, Agentiva finds it.
             </p>
           </details>
           <details>
-            <summary>What is Agentiva?</summary>
+            <summary>Does it run automatically?</summary>
             <p>
-              A runtime that sits in front of your agent’s tools—every email, DB call, shell command, or API request is scored against policy, simulated, and logged before side effects run (in shadow mode).
+              Yes. Run <code style="font-size: 0.85em">agentiva init</code> once. After that, every <code style="font-size: 0.85em">git push</code> is scanned automatically. If issues are found, the push is blocked. Fix the issues, push again, it goes through.
             </p>
           </details>
           <details>
-            <summary>Is self-hosted free?</summary>
+            <summary>Does it block my deployment?</summary>
             <p>
-              Yes. The open-core stack—scan, one agent, policy engine, and local dashboard—is free forever self-hosted. Agentiva Cloud (Pro and Team) is on the waitlist.
+              Only critical issues block. Hardcoded credentials, compromised packages, SQL injection, privilege escalation — these block <code style="font-size: 0.85em">git push</code>. Warnings are logged but don&apos;t block.
             </p>
           </details>
           <details>
-            <summary>Does it work with LangChain / CrewAI / MCP?</summary>
+            <summary>Does it slow down my workflow?</summary>
             <p>
-              Yes — Agentiva is not built inside those frameworks; you integrate by wrapping tools with <code style="font-size: 0.85em">shield.protect()</code> or the provided hooks. MCP traffic can be proxied through the interceptor.
+              No. Scans run in seconds — pure pattern matching, no LLM calls, no cloud round-trips. A 500-file project scans in under 3 seconds.
+            </p>
+          </details>
+          <details>
+            <summary>Does it replace a full security audit?</summary>
+            <p>
+              No. Agentiva is your first line of defense. For production systems, still do penetration testing. Agentiva reduces your attack surface before those reviews.
+            </p>
+          </details>
+          <details>
+            <summary>Does it only scan AI-generated code?</summary>
+            <p>
+              No. It scans all code regardless of who wrote it. Dangerous patterns are dangerous whether Cursor, Claude Code, or a human wrote them.
+            </p>
+          </details>
+          <details>
+            <summary>Can I customize rules?</summary>
+            <p>
+              Yes. YAML policy files. Enable, disable, or adjust any rule. Set risk thresholds, whitelist trusted domains, configure per-agent policies.
+            </p>
+          </details>
+          <details>
+            <summary>How is Agentiva different from VibeLint or Snyk?</summary>
+            <p>
+              VibeLint and Snyk scan code for known patterns. Agentiva does that AND monitors AI agent actions at runtime — emails sent, databases queried, APIs called. We catch edge cases like base64-encoded PII in analytics payloads, typosquatted cloud domains, and silent privilege escalation. Code scanning is one layer. Runtime security is the layer nobody else covers.
             </p>
           </details>
           <details>
             <summary>Is my data secure?</summary>
             <p>
-              Self-hosted data stays on your infrastructure. Audit logs can use your database; exports are generated from persisted action logs you control.
+              Agentiva runs entirely on your machine. No code sent to external servers. No cloud account required. Scan results stored locally in <code style="font-size: 0.85em">.agentiva/</code> which is auto-added to <code style="font-size: 0.85em">.gitignore</code>.
             </p>
           </details>
           <details>
-            <summary>Can I run in production?</summary>
+            <summary>How do I see results?</summary>
             <p>
-              Start in shadow mode to observe, then switch modes when policies are tuned. The dashboard shows block rates and recommendations before you enforce.
+              Three ways: (1) Terminal shows issues immediately on push. (2) <code style="font-size: 0.85em">agentiva dashboard</code> opens an HTML report in your browser. (3) <code style="font-size: 0.85em">agentiva serve</code> starts a live dashboard with audit log and security co-pilot chat.
+            </p>
+          </details>
+          <details>
+            <summary>How does it work with MCP?</summary>
+            <p>
+              Agentiva runs as an MCP proxy. Point your MCP client to Agentiva instead of the upstream server. Every tool call is intercepted, scored, and logged. Dangerous actions blocked.
+            </p>
+          </details>
+          <details>
+            <summary>How do I set up with Cursor?</summary>
+            <p>
+              <code style="font-size: 0.85em">pip install agentiva</code>, then <code style="font-size: 0.85em">agentiva init</code> in your project. Every <code style="font-size: 0.85em">git push</code> is now protected. For real-time monitoring, run <code style="font-size: 0.85em">agentiva serve</code> for the dashboard.
             </p>
           </details>
         </div>

@@ -11,3 +11,7 @@ build/
 .pytest_git_scratch/
 node_modules/
 .next/
+
+# Dashboard local secrets / TS build cache (do not commit)
+dashboard/.env.local
+dashboard/tsconfig.tsbuildinfo

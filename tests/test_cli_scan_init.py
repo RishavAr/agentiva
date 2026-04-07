@@ -47,6 +47,17 @@ def test_scan_exits_nonzero_when_credentials_pattern(tmp_path: Path) -> None:
     assert any("leak.txt" in str(i.get("file", "")) for i in data["issues"])
 
 
+def test_scan_flags_password_in_yaml_and_json(tmp_path: Path) -> None:
+    (tmp_path / "config.yaml").write_text("database:\n  password: secret123\n", encoding="utf-8")
+    (tmp_path / "data.json").write_text('{"private_key": "-----BEGIN PRIVATE KEY-----\\nabc\\n-----END PRIVATE KEY-----"}', encoding="utf-8")
+    r = _run_cli("scan", str(tmp_path))
+    assert r.returncode == 1, r.stderr + r.stdout
+    data = json.loads((tmp_path / ".agentiva" / "last_scan.json").read_text(encoding="utf-8"))
+    files = {i.get("file") for i in data["issues"]}
+    assert "config.yaml" in files or any("config.yaml" in str(f) for f in files)
+    assert data["issues_found"] >= 1
+
+
 def test_scan_advisory_exit_zero_despite_findings(tmp_path: Path) -> None:
     (tmp_path / "leak.txt").write_text("password = 'supersecret123'\n", encoding="utf-8")
     r = _run_cli("scan", str(tmp_path), "--advisory-exit")
