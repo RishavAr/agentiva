@@ -14,6 +14,7 @@
 ## Table of contents
 
 - [Live demo](#live-demo)
+- [Screen demo (GIF)](#screen-demo-gif)
 - [Why Agentiva](#why-agentiva)
 - [What you get](#what-you-get)
 - [Prerequisites](#prerequisites)
@@ -43,6 +44,14 @@
 | **Demo video** | [Watch on Google Drive](https://drive.google.com/file/d/1PJ0MxuFMZo6Iq3HfVlUlWGZEe-B2atRg/view?usp=sharing) |
 
 The marketing site is built from [`website/`](website/). The Next.js app in [`dashboard/`](dashboard/) can be deployed separately (e.g. Vercel); live API calls need `AGENTIVA_API_URL` pointing at a reachable Agentiva backend, or run the dashboard locally against `agentiva serve`.
+
+### Screen demo (GIF)
+
+Drop a short screen recording (terminal, dashboard, IDE) as **`assets/demo.gif`** at the repo root. GitHub renders it inline in the README. Keep the file reasonably small (a few MB) so the page stays fast.
+
+The marketing site uses the same asset at [`website/assets/demo.gif`](website/assets/demo.gif) — copy or replace both when you update the loop.
+
+![Agentiva screen demo](assets/demo.gif)
 
 ---
 

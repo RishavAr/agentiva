@@ -1060,6 +1060,32 @@
       .demo-video-foot a {
         color: #fca5a5;
       }
+      .demo-subhead {
+        font-size: clamp(1.05rem, 2vw, 1.2rem);
+        font-weight: 600;
+        text-align: center;
+        margin: 2.25rem 0 0.65rem;
+        color: var(--text);
+      }
+      .demo-subhead:first-of-type {
+        margin-top: 0;
+      }
+      .demo-gif-wrap {
+        max-width: min(920px, 100%);
+        margin: 0 auto 0.75rem;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        box-shadow: var(--shadow), 0 0 48px rgba(239, 68, 68, 0.1);
+        background: #0a0304;
+        line-height: 0;
+      }
+      .demo-gif-wrap img {
+        width: 100%;
+        height: auto;
+        display: block;
+        vertical-align: middle;
+      }
       .reveal {
         opacity: 0;
         transform: translateY(24px);
@@ -2126,6 +2152,21 @@ result = r.json()
     <section id="demo" class="alt reveal">
       <div class="container">
         <h2>Demo</h2>
+        <p class="section-lead">
+          Short <strong style="color: #fecaca">GIF</strong> loop plus full <strong style="color: #fecaca">video</strong> walkthrough. Replace the placeholder GIF in the repo with your own screen capture (terminal, dashboard, or IDE).
+        </p>
+        <h3 class="demo-subhead">Quick loop (GIF)</h3>
+        <p class="section-lead" style="margin-bottom: 1rem; font-size: 0.92rem">
+          File: <code style="font-size: 0.85em">website/assets/demo.gif</code> — same asset pattern as
+          <code style="font-size: 0.85em">assets/demo.gif</code> in the README.
+        </p>
+        <div class="demo-gif-wrap">
+          <img src="assets/demo.gif" alt="Agentiva — short screen demo (GIF)" loading="lazy" decoding="async" />
+        </div>
+        <p class="demo-video-foot" style="margin-bottom: 2rem">
+          Export from screen recording (e.g. macOS QuickTime → gifski or ffmpeg). Keep file size modest for fast loads.
+        </p>
+        <h3 class="demo-subhead">Full walkthrough (video)</h3>
         <p class="section-lead">
           Product walkthrough (hosted on Google Drive). If the player does not load, open the video in a new tab—Drive requires the file to be shared as
           <strong style="color: #fecaca; font-weight: 600">Anyone with the link</strong> for embeds to work for all visitors.
