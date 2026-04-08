@@ -7,16 +7,22 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)]()
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue)]()
 
-![Agentiva demo](assets/demo.gif)
+**How to use this README**
+
+| Goal | Where to start |
+|------|----------------|
+| Use Agentiva in **your** project (`pip install`, scan-on-push, or `agentiva serve`) | [Quick start](#quick-start) |
+| **Develop** Agentiva from a clone (API + Next.js dashboard) | [Install → from source](#install), then [End-to-end local setup](#end-to-end-local-setup) |
+| See what the dashboard looks like in motion (optional) | Screen recording: [`assets/demo.gif`](assets/demo.gif) — not required for install or setup |
 
 ---
 
 ## Table of contents
 
+- [Quick start](#quick-start)
 - [Why Agentiva](#why-agentiva)
 - [What you get](#what-you-get)
 - [Prerequisites](#prerequisites)
-- [Quick start](#quick-start)
 - [Install](#install)
 - [End-to-end local setup](#end-to-end-local-setup)
 - [CLI reference](#cli-reference)
@@ -31,38 +37,6 @@
 - [Architecture](#architecture)
 - [Troubleshooting](#troubleshooting)
 - [Contributing and license](#contributing-and-license)
-
----
-
-## Why Agentiva
-
-Agents call real tools: email, databases, shells, payments. Agentiva sits **in front of those calls**, applies **YAML policies** and a **risk scorer**, supports **shadow / live / approval** style modes, and persists **audit evidence** you can export for audit and review workflows.
-
-It is **self-hostable**, open source (Apache 2.0), and integrates with common stacks (LangChain, CrewAI, OpenAI-style tools, Anthropic, MCP, or plain HTTP).
-
----
-
-## What you get
-
-| Capability | Description |
-|------------|-------------|
-| **Intercept** | Score and allow / shadow / block (or hand off to approval) before side effects run |
-| **Policy engine** | Declarative rules in YAML; tune for your org |
-| **Audit log** | Searchable history, agent registry, audit log exports (JSON, CSV) in the dashboard |
-| **Security co-pilot** | Chat over your logs; optional LLM via OpenRouter |
-| **Project scanner** | `agentiva scan` for risky patterns in repos (optional git hook on `agentiva init`) |
-| **MCP proxy** | Route MCP traffic through interception |
-
----
-
-## Prerequisites
-
-| Component | Version / notes |
-|-----------|-----------------|
-| **Python** | 3.10+ (3.11 used in Docker image) |
-| **Node.js** | Current LTS recommended for the Next.js dashboard |
-| **Git** | For clone and optional pre-push hook |
-| **Docker** (optional) | Docker Compose for full stack + Postgres + Redis |
 
 ---
 
@@ -121,6 +95,38 @@ Hardcoded credentials · SQL injection · Prompt injection · LLM output executi
 | **See results?** | Terminal on push; `agentiva dashboard` for HTML report; `agentiva serve` for live dashboard. |
 | **MCP?** | Use `agentiva mcp-proxy` — point the client at Agentiva instead of upstream. |
 | **Cursor?** | `pip install agentiva` + `agentiva init` in the repo; add `agentiva serve` for live monitoring. |
+
+---
+
+## Why Agentiva
+
+Agents call real tools: email, databases, shells, payments. Agentiva sits **in front of those calls**, applies **YAML policies** and a **risk scorer**, supports **shadow / live / approval** style modes, and persists **audit evidence** you can export for audit and review workflows.
+
+It is **self-hostable**, open source (Apache 2.0), and integrates with common stacks (LangChain, CrewAI, OpenAI-style tools, Anthropic, MCP, or plain HTTP).
+
+---
+
+## What you get
+
+| Capability | Description |
+|------------|-------------|
+| **Intercept** | Score and allow / shadow / block (or hand off to approval) before side effects run |
+| **Policy engine** | Declarative rules in YAML; tune for your org |
+| **Audit log** | Searchable history, agent registry, audit log exports (JSON, CSV) in the dashboard |
+| **Security co-pilot** | Chat over your logs; optional LLM via OpenRouter |
+| **Project scanner** | `agentiva scan` for risky patterns in repos (optional git hook on `agentiva init`) |
+| **MCP proxy** | Route MCP traffic through interception |
+
+---
+
+## Prerequisites
+
+| Component | Version / notes |
+|-----------|-----------------|
+| **Python** | 3.10+ (3.11 used in Docker image) |
+| **Node.js** | Current LTS recommended for the Next.js dashboard |
+| **Git** | For clone and optional pre-push hook |
+| **Docker** (optional) | Docker Compose for full stack + Postgres + Redis |
 
 ---
 
