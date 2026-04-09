@@ -9,6 +9,8 @@
 
 ## Install
 
+Recommended for CLI tools (works great on macOS/Homebrew):
+
 ```bash
 pipx install agentiva
 pipx ensurepath
@@ -22,6 +24,12 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
 python -m pip install -U agentiva
+```
+
+Already in a virtualenv? You can also do:
+
+```bash
+pip install -U agentiva
 ```
 
 ## Use as a repo scanner (optional git hook)

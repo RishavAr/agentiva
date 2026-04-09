@@ -65,6 +65,12 @@ python -m pip install -U agentiva
 agentiva init
 ```
 
+Already in a virtualenv? You can also do:
+
+```bash
+pip install -U agentiva
+```
+
 Then commit and push as usual. Agentiva scans on each push; if critical issues are found, the push is blocked. Fix the findings and push again.
 
 ```bash
