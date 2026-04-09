@@ -4,7 +4,7 @@ default_mode: shadow
 rules:
   # --- MCP proxy server allowlist ---
   # When using `agentiva mcp-proxy`, the intercepted action context includes:
-  #   context.mcp_upstream = "<host:port>" (e.g. "localhost:3001")
+  #   context.mcp_upstream = "<host:port>" (example: "localhost:3001")
   #
   # To restrict which upstream MCP server(s) agents may use through the proxy,
   # list allowed upstreams here. Everything else is blocked.
@@ -22,6 +22,7 @@ rules:
       field: context.mcp_upstream
       operator: not_in
       value:
+        # Replace this with your approved MCP upstream(s).
         - "localhost:3001"
     action: block
     risk_score: 0.95

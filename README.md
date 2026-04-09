@@ -290,7 +290,7 @@ rules:
       field: context.mcp_upstream
       operator: not_in
       value:
-        - "localhost:3001"
+        - "HOST:PORT"                  # replace with your approved MCP server(s)
         - "mcp.internal.yourcompany.com:443"
     action: block
     risk_score: 0.95
@@ -302,15 +302,17 @@ If you want **one** Agentiva proxy to front multiple MCP servers, start it with 
 
 ```bash
 agentiva mcp-proxy \
-  --upstream "mcp.dev.yourcompany.com:3001" \
-  --upstream-alias prod=mcp.prod.yourcompany.com:3001 \
-  --upstream-alias staging=mcp.staging.yourcompany.com:3001 \
+  --upstream "HOST:PORT" \
+  --upstream-alias prod=HOST:PORT \
+  --upstream-alias staging=HOST:PORT \
   --multi-upstream
 ```
 
 Then MCP clients can send `upstream: "prod"` (or `"staging"`) in the request body, and policy can enforce:
 - `context.mcp_upstream` (actual host:port)
 - `context.mcp_upstream_alias` (alias name)
+
+**Note:** `3001` is just a common example port used in demos. Agentiva does not auto-discover the upstream MCP server; you must pass it via `--upstream` / `--upstream-alias`.
 
 ---
 
