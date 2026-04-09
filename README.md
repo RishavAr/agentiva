@@ -252,7 +252,7 @@ Open **`http://127.0.0.1:3001`** in the browser. The dev server binds to `127.0.
 | `agentiva scan [DIR]` | Static scan of a project tree (reports under `.agentiva/`) |
 | `agentiva dashboard [DIR]` | Open the **scan report** HTML in `.agentiva/` (not the Next.js audit UI) |
 | `agentiva init` | Install git pre-push hook that runs `agentiva scan` |
-| `agentiva allow PATH \| --list \| --remove PATH \| --reset` | Allow false positives (skip files/folders during scans) |
+| `agentiva allow PATH \| --list \| --remove PATH \| --reset` | Suppress WARN/SHADOW for paths (BLOCK findings still enforced) |
 | `agentiva init-policy [--output policies/default.yaml]` | Copy default policy YAML into your tree |
 | `agentiva mcp-proxy --upstream HOST:PORT --port 3002` | MCP proxy with interception |
 | `agentiva demo` | Run packaged demo scenarios |

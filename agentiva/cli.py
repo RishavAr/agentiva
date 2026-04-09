@@ -350,23 +350,15 @@ def _cmd_scan(args: argparse.Namespace) -> None:
         if rel_root == ".":
             rel_root = ""
 
-        kept_dirs: list[str] = []
-        for d in dirs:
-            if d in skip_dir_names:
-                continue
-            rel_dir = f"{rel_root}/{d}" if rel_root else d
-            rel_dir = rel_dir.replace("\\", "/").strip("/") + "/"
-            if _is_allowed(rel_dir.rstrip("/"), allow_paths) or _is_allowed(rel_dir, allow_paths):
-                continue
-            kept_dirs.append(d)
-        dirs[:] = kept_dirs
+        # Do NOT skip allowlisted dirs here: allowlist suppresses WARN/SHADOW only,
+        # but BLOCK findings must still be detected even within allowlisted paths.
+        dirs[:] = [d for d in dirs if d not in skip_dir_names]
 
         for filename in files:
             filepath = os.path.join(root, filename)
             rel_path = os.path.relpath(filepath, abs_dir)
             rel_path_posix = rel_path.replace("\\", "/")
-            if _is_allowed(rel_path_posix, allow_paths):
-                continue
+            is_allowlisted = _is_allowed(rel_path_posix, allow_paths)
 
             try:
                 content, _ = read_utf8_text_file(filepath)
@@ -385,6 +377,9 @@ def _cmd_scan(args: argparse.Namespace) -> None:
                     scan_agent_id,
                     gitignore_warned,
                 )
+                if is_allowlisted:
+                    # Allowlist suppresses warnings, but never suppresses blocks.
+                    new_issues = [i for i in new_issues if i.get("decision") == "block"]
                 for row in new_issues:
                     issues_found += 1
                     scan_issues.append(row)
