@@ -17,7 +17,7 @@ Use this text to align the deck with the website and dashboard marketing.
 - Policy engine (YAML) + local dashboard
 - Shadow + live modes
 - Security co-pilot (baseline)
-- Community support · `pip install agentiva`
+- Community support · `pipx install agentiva`
 
 **CTA:** Get started free
 

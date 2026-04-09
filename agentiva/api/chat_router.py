@@ -649,7 +649,7 @@ async def generate_for_intent(intent: str, msg: str, data: Dict[str, Any], ctx: 
             "content": (
                 "Getting started with Agentiva is quick:\n\n"
                 "**1. Install:**\n"
-                "`pip install agentiva`\n\n"
+                "`pipx install agentiva`\n\n"
                 "**2. Add to your agent code:**\n"
                 "```python\n"
                 "from agentiva import Agentiva\n"

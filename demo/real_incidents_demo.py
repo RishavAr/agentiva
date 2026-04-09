@@ -608,7 +608,7 @@ async def main() -> None:
     print()
     print("  Review the Audit log in the dashboard for each intercept decision.")
     print()
-    print("  🎯 pip install agentiva")
+    print("  🎯 pipx install agentiva")
     print("  🌐 github.com/RishavAr/agentshield")
     print("  📧 Book a demo: calendly.com/rishavaryan058/30min")
 

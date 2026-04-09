@@ -1807,7 +1807,7 @@
           (same “Welcome to Agentiva” flow as local). For live API data, run <code style="font-size: 0.85em">agentiva serve</code> and the dashboard locally, or point the hosted app at your API — see
           <a href="#dashboard" style="color: #fca5a5">local setup</a>.
         </p>
-        <div class="code-box">pip install agentiva</div>
+        <div class="code-box">pipx install agentiva</div>
         <div class="terminal-demo" aria-live="polite">
           <div class="line"><span>send_email → external</span><span class="badge-block">BLOCKED</span></div>
           <div class="line"><span>update_database → DROP</span><span class="badge-block">BLOCKED</span></div>
@@ -1858,7 +1858,7 @@
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
-              <pre>pip install agentiva</pre>
+              <pre>pipx install agentiva</pre>
             </div>
           </div>
 
@@ -1893,16 +1893,45 @@ git push
 
           <div class="install-step-block">
             <div class="install-step-badge">4</div>
-            <h3>If blocked, fix and retry</h3>
-            <p class="install-desc">Use the scan output to fix issues, then push again.</p>
+            <h3>If blocked, fix the real threat (and allow false positives)</h3>
+            <p class="install-desc">
+              Agentiva blocks critical issues. If a warning is a known false positive (test mocks, local dev config), allow it once and move on.
+            </p>
             <div class="install-result" aria-label="Example blocked output">
-              <pre><span class="syn-cmt"># Example output</span>
+              <pre><span class="syn-cmt"># Your agent flagged something you know is safe</span>
+$ git push
 
-  <span class="r-block">[BLOCK] config.py — Hardcoded credentials: api_key (Risk: 0.92)</span>
-  <span class="r-block">[BLOCK] app.py — SQL injection via f-string (Risk: 0.90)</span>
-  <span class="r-shadow">[WARN]  deploy.sh — Dangerous command: git push --force (Risk: 0.65)</span>
+🛡️  Agentiva scanning before push...
 
-<span class="syn-cmt"># Fix the issues. Push again. It goes through.</span></pre>
+  <span class="r-block">[BLOCK] paybot/tasks/cleanup.py</span>
+     Privilege escalation — superadmin role assignment
+     Risk: 0.95
+
+  <span class="r-shadow">[WARN]  tests/test_auth.py</span>
+     Hardcoded credentials: password
+     Risk: 0.45
+
+  <span class="r-shadow">[WARN]  config/dev.yaml</span>
+     Hardcoded credentials: database_url
+     Risk: 0.42
+
+  <span class="syn-cmt"># Fix the real threat</span>
+$ git add . &amp;&amp; git commit -m "fixed cleanup.py"
+
+<span class="syn-cmt"># Allow the false positives</span>
+$ agentiva allow tests/test_auth.py
+  ✅ tests/test_auth.py added to allowlist
+
+$ agentiva allow tests/
+  ✅ tests/ added to allowlist
+
+$ agentiva allow config/dev.yaml
+  ✅ config/dev.yaml added to allowlist
+
+<span class="syn-cmt"># Push again — clean</span>
+$ git push
+  ✅ No security issues found. Safe to deploy.
+  ✅ Agentiva: all clear. Pushing...</pre>
             </div>
           </div>
 
@@ -1939,7 +1968,7 @@ git push
             <div class="install-code-block">
               <span class="install-lang">terminal</span>
               <button type="button" class="install-copy" onclick="agentivaCopyCode(this)">Copy</button>
-              <pre>pip install agentiva</pre>
+              <pre>pipx install agentiva</pre>
             </div>
           </div>
 
@@ -2167,7 +2196,7 @@ result = r.json()
             <div class="step-num">1</div>
             <h3 style="margin: 0 0 0.5rem; font-size: 1.05rem; color: var(--text)">Install</h3>
             <div class="code-box" style="margin: 0">
-              pip install agentiva<br />agentiva serve<br /><span style="color: var(--muted); font-size: 0.88em"
+              pipx install agentiva<br />agentiva serve<br /><span style="color: var(--muted); font-size: 0.88em"
                 >Dashboard opens automatically. See <a href="#install" style="color: #fca5a5">full install</a>.</span
               >
             </div>
@@ -2367,7 +2396,7 @@ result = r.json()
             <span class="roadmap-pill now">Available now</span>
             <h3>Ship today</h3>
             <ul>
-              <li><code style="font-size: 0.82em">pip install agentiva</code></li>
+              <li><code style="font-size: 0.82em">pipx install agentiva</code></li>
               <li>CLI scanner (<code style="font-size: 0.82em">agentiva scan .</code>)</li>
               <li>Git pre-push hook (blocks dangerous deployments)</li>
               <li>8-signal deterministic risk scoring</li>
@@ -2490,7 +2519,7 @@ result = r.json()
           <details>
             <summary>How do I set up with Cursor?</summary>
             <p>
-              <code style="font-size: 0.85em">pip install agentiva</code>, then <code style="font-size: 0.85em">agentiva init</code> in your project. Every <code style="font-size: 0.85em">git push</code> is now protected. For real-time monitoring, run <code style="font-size: 0.85em">agentiva serve</code> for the dashboard.
+              <code style="font-size: 0.85em">pipx install agentiva</code>, then <code style="font-size: 0.85em">agentiva init</code> in your project. Every <code style="font-size: 0.85em">git push</code> is now protected. For real-time monitoring, run <code style="font-size: 0.85em">agentiva serve</code> for the dashboard.
             </p>
           </details>
         </div>
@@ -2558,7 +2587,7 @@ result = r.json()
           <a href="https://linkedin.com/in/rishav-aryan" target="_blank" rel="noopener">LinkedIn</a>
         </div>
         <p style="margin-top: 1rem">Built by <strong>Rishav Aryan</strong></p>
-        <p style="margin-top: 0.5rem; font-size: 0.85rem"><code style="background: rgba(30,41,59,0.8); padding: 0.2rem 0.45rem; border-radius: 6px">pip install agentiva</code></p>
+        <p style="margin-top: 0.5rem; font-size: 0.85rem"><code style="background: rgba(30,41,59,0.8); padding: 0.2rem 0.45rem; border-radius: 6px">pipx install agentiva</code></p>
         <p style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--muted)">© 2026 Agentiva. Open-source under Apache 2.0.</p>
       </div>
     </footer>
@@ -2679,7 +2708,7 @@ result = r.json()
           span.textContent = msg;
           successEl.appendChild(span);
           var code = document.createElement("code");
-          code.textContent = "pip install agentiva";
+          code.textContent = "pipx install agentiva";
           successEl.appendChild(code);
           successEl.classList.add("visible");
         }

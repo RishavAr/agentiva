@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "agentiva"
-version = "0.1.4"
-description = "Agentiva — open-source runtime for AI agent safety"
-readme = "README.md"
+version = "0.1.5"
+description = "Runtime safety for AI agents: intercept tool calls, policy scoring, and audit logging"
+readme = "PYPI_README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 dynamic = ["dependencies"]

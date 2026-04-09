@@ -288,6 +288,13 @@ class PolicyEngine:
                 return val in target
             except TypeError:
                 return False
+        if op == "not_in":
+            if target is None:
+                return False
+            try:
+                return val not in target
+            except TypeError:
+                return False
         return False
 
     def _get(self, obj, path):

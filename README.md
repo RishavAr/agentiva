@@ -11,7 +11,7 @@
 
 | Goal | Where to start |
 |------|----------------|
-| Use Agentiva in **your** project (`pip install`, scan-on-push, or `agentiva serve`) | [Quick start](#quick-start) |
+| Use Agentiva in **your** project (`pipx install`, scan-on-push, or `agentiva serve`) | [Quick start](#quick-start) |
 | **Develop** Agentiva from a clone (API + Next.js dashboard) | [Install → from source](#install), then [End-to-end local setup](#end-to-end-local-setup) |
 | See what the dashboard looks like in motion (optional) | Screen recording: [`assets/demo.gif`](assets/demo.gif) — not required for install or setup |
 
@@ -47,9 +47,18 @@ Two ways to use Agentiva: **scan on every git push** (coding agents) or **interc
 ### AI coding agents
 
 ```bash
-pip install agentiva
+pipx install agentiva
 cd your-project
 agentiva init
+```
+
+If you don’t have `pipx` (or you’re on macOS/Homebrew and see “externally-managed-environment”), use a venv:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+python -m pip install -U agentiva
 ```
 
 Then commit and push as usual. Agentiva scans on each push; if critical issues are found, the push is blocked. Fix the findings and push again.
@@ -58,6 +67,24 @@ Then commit and push as usual. Agentiva scans on each push; if critical issues a
 git add .
 git commit -m "your change"
 git push
+```
+
+If you get warnings for things you know are safe (mock credentials in tests, local dev config), allow them once so future scans skip them:
+
+```bash
+# Allow a specific file
+agentiva allow tests/test_auth.py
+
+# Allow an entire folder
+agentiva allow tests/
+
+# Allow a specific dev config file
+agentiva allow config/dev.yaml
+
+# See / remove / reset
+agentiva allow --list
+agentiva allow --remove config/dev.yaml
+agentiva allow --reset
 ```
 
 ```bash
@@ -69,7 +96,7 @@ After `agentiva init`, every git push is protected automatically — no extra co
 ### Agent frameworks
 
 ```bash
-pip install agentiva
+pipx install agentiva
 agentiva serve
 ```
 
@@ -94,7 +121,7 @@ Hardcoded credentials · SQL injection · Prompt injection · LLM output executi
 | **Data privacy?** | Runs locally; scan output under `.agentiva/` (hook adds it to `.gitignore`). |
 | **See results?** | Terminal on push; `agentiva dashboard` for HTML report; `agentiva serve` for live dashboard. |
 | **MCP?** | Use `agentiva mcp-proxy` — point the client at Agentiva instead of upstream. |
-| **Cursor?** | `pip install agentiva` + `agentiva init` in the repo; add `agentiva serve` for live monitoring. |
+| **Cursor?** | `pipx install agentiva` + `agentiva init` in the repo; add `agentiva serve` for live monitoring. |
 
 ---
 
@@ -135,7 +162,7 @@ It is **self-hostable**, open source (Apache 2.0), and integrates with common st
 ### From PyPI (runtime only)
 
 ```bash
-pip install agentiva
+pipx install agentiva
 agentiva scan .
 agentiva init
 ```
@@ -152,8 +179,8 @@ cd agentiva
 
 python3 -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
-pip install --upgrade pip
-pip install -e .
+python -m pip install --upgrade pip
+python -m pip install -e .
 ```
 
 This installs the `agentiva` CLI and pulls dependencies from `requirements.txt` (via `pyproject.toml`).
@@ -213,6 +240,7 @@ Open **`http://127.0.0.1:3001`** in the browser. The dev server binds to `127.0.
 | `agentiva scan [DIR]` | Static scan of a project tree (reports under `.agentiva/`) |
 | `agentiva dashboard [DIR]` | Open the **scan report** HTML in `.agentiva/` (not the Next.js audit UI) |
 | `agentiva init` | Install git pre-push hook that runs `agentiva scan` |
+| `agentiva allow PATH \| --list \| --remove PATH \| --reset` | Allow false positives (skip files/folders during scans) |
 | `agentiva init-policy [--output policies/default.yaml]` | Copy default policy YAML into your tree |
 | `agentiva mcp-proxy --upstream HOST:PORT --port 3002` | MCP proxy with interception |
 | `agentiva demo` | Run packaged demo scenarios |
@@ -236,6 +264,41 @@ tools = shield.protect([your_tool_a, your_tool_b])
 **HTTP interception** — POST tool intent to the API (see OpenAPI `POST /api/v1/intercept`) for custom runtimes.
 
 **MCP** — point clients at `agentiva mcp-proxy` and configure upstream per CLI help.
+
+### MCP upstream allowlist (org policy)
+
+If you run `agentiva mcp-proxy`, Agentiva adds the upstream server into the policy context as `context.mcp_upstream`.
+You can enforce an org allowlist in your YAML policy:
+
+```yaml
+rules:
+  - name: mcp_upstream_allowlist
+    tool: "*"
+    condition:
+      field: context.mcp_upstream
+      operator: not_in
+      value:
+        - "localhost:3001"
+        - "mcp.internal.yourcompany.com:443"
+    action: block
+    risk_score: 0.95
+```
+
+### Multi-upstream MCP proxy (optional)
+
+If you want **one** Agentiva proxy to front multiple MCP servers, start it with explicit aliases:
+
+```bash
+agentiva mcp-proxy \
+  --upstream "mcp.dev.yourcompany.com:3001" \
+  --upstream-alias prod=mcp.prod.yourcompany.com:3001 \
+  --upstream-alias staging=mcp.staging.yourcompany.com:3001 \
+  --multi-upstream
+```
+
+Then MCP clients can send `upstream: "prod"` (or `"staging"`) in the request body, and policy can enforce:
+- `context.mcp_upstream` (actual host:port)
+- `context.mcp_upstream_alias` (alias name)
 
 ---
 
@@ -285,7 +348,7 @@ If you edit it, preview by opening `website/index.html` in a browser. Everything
 There are two different things named “dashboard”:
 
 1. **`agentiva dashboard`** (works after `pip install`) — Opens the **security scan** report (`report.html` produced by `agentiva scan`). No Node.js required.
-2. **Next.js app in `dashboard/`** — The **full product UI** (overview, live actions, audit, agents, policies, chat). Requires a **repo clone** or **Docker Compose**; it is not installed by `pip install agentiva`.
+2. **Next.js app in `dashboard/`** — The **full product UI** (overview, live actions, audit, agents, policies, chat). Requires a **repo clone** or **Docker Compose**; it is not installed by `pipx install agentiva`.
 
 When the Next.js app is running in **development**:
 

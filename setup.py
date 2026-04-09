@@ -11,8 +11,8 @@ def _read_requirements() -> list[str]:
 
 setup(
     name="agentiva",
-    version="0.1.1",
-    description="Agentiva — open-source runtime for AI agent safety (intercept, policy, audit)",
+    version="0.1.5",
+    description="Runtime safety for AI agents: intercept tool calls, policy scoring, and audit logging",
     license="Apache-2.0",
     python_requires=">=3.10",
     packages=find_packages(

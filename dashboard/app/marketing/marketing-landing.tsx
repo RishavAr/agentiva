@@ -607,7 +607,7 @@ export default function MarketingLanding() {
           <div className="flex flex-wrap items-center gap-4">
             <a href="https://github.com/RishavAr/agentiva" target="_blank" rel="noopener noreferrer">GitHub</a>
             <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a>
-            <span className="font-mono text-[#fde68a]">pip install agentiva</span>
+            <span className="font-mono text-[#fde68a]">pipx install agentiva</span>
           </div>
           <p>Built by Rishav Aryan</p>
         </div>
