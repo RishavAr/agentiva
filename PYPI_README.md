@@ -11,9 +11,11 @@
 
 ```bash
 pipx install agentiva
+pipx ensurepath
+# open a new terminal (or restart your shell)
 ```
 
-If you don’t have `pipx`:
+If you don’t have `pipx`, or you prefer a per-project install (no PATH changes):
 
 ```bash
 python3 -m venv .venv

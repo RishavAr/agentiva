@@ -48,17 +48,21 @@ Two ways to use Agentiva: **scan on every git push** (coding agents) or **interc
 
 ```bash
 pipx install agentiva
+pipx ensurepath
+# open a new terminal (or restart your shell)
 cd your-project
 agentiva init
 ```
 
-If you don’t have `pipx` (or you’re on macOS/Homebrew and see “externally-managed-environment”), use a venv:
+If you don’t have `pipx`, or you prefer a per-project install (no PATH changes), use a venv:
 
 ```bash
+cd your-project
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -U pip
 python -m pip install -U agentiva
+agentiva init
 ```
 
 Then commit and push as usual. Agentiva scans on each push; if critical issues are found, the push is blocked. Fix the findings and push again.
@@ -97,6 +101,8 @@ After `agentiva init`, every git push is protected automatically — no extra co
 
 ```bash
 pipx install agentiva
+pipx ensurepath
+# open a new terminal (or restart your shell)
 agentiva serve
 ```
 
